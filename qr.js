@@ -1,5 +1,6 @@
 const KKN_START = new Date(2026, 5, 22);
 const KKN_DAYS = 40;
+const SITE_URL = "https://absen-kkn-gamalama-2026.vercel.app/";
 
 function pad(value) {
   return String(value).padStart(2, "0");
@@ -28,9 +29,7 @@ function dailyToken(key = dateKey()) {
 }
 
 function attendanceLink() {
-  const url = new URL(window.location.href);
-  url.pathname = url.pathname.replace(/qr\.html$/, "index.html");
-  url.search = "";
+  const url = new URL(SITE_URL);
   url.searchParams.set("absen", dateKey());
   url.searchParams.set("token", dailyToken());
   return url.toString();

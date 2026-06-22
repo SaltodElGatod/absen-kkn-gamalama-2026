@@ -27,6 +27,7 @@ Peserta login memakai nama lengkap sebagai username dan NPM sebagai password.
 ## Cara Pakai
 
 1. Buka `qr.html` untuk menampilkan atau mencetak QR absensi harian.
+   QR selalu mengarah ke `https://absen-kkn-gamalama-2026.vercel.app/`.
 2. Peserta scan QR dan masuk ke `index.html`. Jika belum login, peserta akan diminta login dulu.
 3. Setelah login, peserta memilih `Absen Datang` atau `Absen Pulang`.
 4. `Absen Datang` mengisi kolom `Jam Masuk`, dan `Absen Pulang` mengisi kolom `Jam Pulang`.

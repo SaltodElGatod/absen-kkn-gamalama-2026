@@ -51,13 +51,26 @@ body {
   gap: 14px;
 }
 
-.brand img {
-  width: 62px;
-  height: 62px;
+.logo-strip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(16, 32, 51, 0.08);
+}
+
+.logo-strip img {
+  width: 44px;
+  height: 44px;
   object-fit: cover;
+  border-radius: 6px;
+}
+
+.logo-strip img:first-child {
   border-radius: 50%;
-  border: 2px solid var(--line);
-  box-shadow: 0 8px 20px rgba(16, 32, 51, 0.12);
 }
 
 .brand p,
@@ -145,7 +158,8 @@ body {
 select,
 input,
 textarea,
-button {
+button,
+.button-link {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -160,7 +174,11 @@ textarea {
   background: #fff;
 }
 
-button {
+button,
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 11px 14px;
   color: #fff;
   background: linear-gradient(135deg, var(--green), #218b73);
@@ -168,6 +186,7 @@ button {
   cursor: pointer;
   text-align: center;
   font-weight: 700;
+  text-decoration: none;
 }
 
 button#exportExcelBtn {
@@ -175,7 +194,8 @@ button#exportExcelBtn {
   border-color: var(--sea);
 }
 
-button:hover {
+button:hover,
+.button-link:hover {
   filter: brightness(0.96);
 }
 
@@ -453,7 +473,7 @@ td.status.sakit {
 }
 
 .actions {
-  grid-template-columns: minmax(190px, 1.2fr) minmax(100px, 0.7fr) minmax(145px, 0.8fr) minmax(96px, 0.6fr) minmax(120px, 0.7fr);
+  grid-template-columns: minmax(190px, 1.2fr) minmax(100px, 0.7fr) minmax(145px, 0.8fr) minmax(96px, 0.6fr) minmax(120px, 0.7fr) minmax(100px, 0.6fr);
   align-items: center;
 }
 
@@ -572,8 +592,15 @@ table {
 }
 
 .qr-print strong,
-.qr-print span {
+.qr-print span,
+.qr-print small {
   display: block;
+}
+
+.qr-print small {
+  margin-top: 8px;
+  color: var(--green);
+  font-weight: 700;
 }
 
 .qr-print span {
@@ -640,6 +667,15 @@ td.status {
 
   .session span {
     text-align: left;
+  }
+
+  .brand {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .logo-strip {
+    flex-wrap: wrap;
   }
 
   .stats {
