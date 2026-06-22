@@ -11,7 +11,7 @@ const USERS = [
   { name: "Asti", npm: "03082311035" },
   { name: "Affan Husen", npm: "03082311036" },
   { name: "Asria A. Arif", npm: "03082311038" },
-  { name: "Nurul Husni Husen", npm: "07352311154" },
+  { name: "Nurul Husni Husen", npm: "07352311124" },
   { name: "Rezha Amelia Putri Firmansyah", npm: "07352311127" },
   { name: "Muhammad Salwan Wahab", npm: "07352311159" },
 ];
