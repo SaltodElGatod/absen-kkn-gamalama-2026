@@ -406,10 +406,9 @@ function renderTodayStatus() {
     return;
   }
   const record = ensureModernRecord(recordFor(session.npm, dateKey()));
-  const status = record?.status || "-";
   const hasStartedAttendance = record?.status === "hadir" && Boolean(record.checkIn);
-  els.todayStatus.textContent = status === "hadir" ? `Hadir | Masuk ${record.checkIn || "-"} | Pulang ${record.checkOut || "-"}` : status;
-  els.todayStatus.className = `today-status ${record?.status || ""}`;
+  els.todayStatus.textContent = record ? "Sudah absen" : "Belum absen";
+  els.todayStatus.className = `today-status ${record ? "hadir" : ""}`;
   els.openScannerBtn.classList.remove("hidden");
   els.attendanceActions.classList.toggle("hidden", !pendingQr);
   els.permitForm.classList.toggle("hidden", !pendingQr || hasStartedAttendance);
