@@ -35,19 +35,32 @@ function attendanceLink() {
   return url.toString();
 }
 
-const today = dateKey();
-const day = Math.max(1, Math.min(KKN_DAYS, kknDayNumber()));
-const link = attendanceLink();
+let activeDate = "";
 
-document.querySelector("#qrDate").textContent = `${displayDate(today)} | Hari ${day}`;
+function renderQr() {
+  const today = dateKey();
+  const day = Math.max(1, Math.min(KKN_DAYS, kknDayNumber()));
+  const link = attendanceLink();
+  const qrBox = document.querySelector("#externalQr");
 
-if (window.QRCode) {
-  new QRCode(document.querySelector("#externalQr"), {
-    text: link,
-    width: 240,
-    height: 240,
-    correctLevel: QRCode.CorrectLevel.M,
-  });
-} else {
-  document.querySelector("#externalQr").textContent = "QR gagal dimuat.";
+  activeDate = today;
+  document.querySelector("#qrDate").textContent = `${displayDate(today)} | Hari ${day}`;
+  qrBox.innerHTML = "";
+
+  if (window.QRCode) {
+    new QRCode(qrBox, {
+      text: link,
+      width: 240,
+      height: 240,
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+  } else {
+    qrBox.textContent = "QR gagal dimuat.";
+  }
 }
+
+renderQr();
+
+setInterval(() => {
+  if (dateKey() !== activeDate) renderQr();
+}, 60000);

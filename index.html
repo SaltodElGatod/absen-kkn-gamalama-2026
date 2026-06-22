@@ -102,7 +102,21 @@
             </div>
             <span class="badge" id="todayLabel">22/06/2026</span>
           </div>
-          <div class="today-status" id="todayStatus">Belum absen</div>
+          <div class="today-status" id="todayStatus">-</div>
+          <button id="openScannerBtn" class="scan-button hidden" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7V5a1 1 0 0 1 1-1h2"></path>
+              <path d="M17 4h2a1 1 0 0 1 1 1v2"></path>
+              <path d="M20 17v2a1 1 0 0 1-1 1h-2"></path>
+              <path d="M7 20H5a1 1 0 0 1-1-1v-2"></path>
+              <path d="M7 12h10"></path>
+            </svg>
+            Buka Kamera
+          </button>
+          <div id="scannerPanel" class="scanner-panel hidden">
+            <video id="scannerVideo" playsinline muted></video>
+            <button id="closeScannerBtn" class="ghost" type="button">Tutup Kamera</button>
+          </div>
           <div id="attendanceActions" class="attendance-actions hidden">
             <button id="checkInBtn" type="button">Absen Datang</button>
             <button id="checkOutBtn" type="button">Absen Pulang</button>
@@ -127,8 +141,8 @@
           <div class="legend">
             <span><b class="dot hadir"></b>Hadir setelah absen datang</span>
             <span><b class="dot alpa"></b>Alpa jika tidak scan sampai hari berganti</span>
-            <span><b class="dot izin"></b>Izin berdasarkan konfirmasi admin</span>
-            <span><b class="dot sakit"></b>Sakit berdasarkan konfirmasi admin</span>
+            <span><b class="dot izin"></b>Izin dengan alasan</span>
+            <span><b class="dot sakit"></b>Sakit dengan alasan</span>
           </div>
           <p id="scanMessage" class="message" role="status"></p>
         </section>

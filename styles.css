@@ -449,6 +449,38 @@ label {
   margin-top: 14px;
 }
 
+.scan-button {
+  gap: 8px;
+  margin-top: 14px;
+  min-height: 48px;
+  background: linear-gradient(135deg, var(--green), var(--sea));
+}
+
+.scan-button svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.scanner-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.scanner-panel video {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #101820;
+}
+
 .permit-form {
   display: grid;
   gap: 12px;

@@ -39,6 +39,10 @@ const els = {
   scanMessage: document.querySelector("#scanMessage"),
   statusPanel: document.querySelector("#statusPanel"),
   todayStatus: document.querySelector("#todayStatus"),
+  openScannerBtn: document.querySelector("#openScannerBtn"),
+  scannerPanel: document.querySelector("#scannerPanel"),
+  scannerVideo: document.querySelector("#scannerVideo"),
+  closeScannerBtn: document.querySelector("#closeScannerBtn"),
   attendanceActions: document.querySelector("#attendanceActions"),
   checkInBtn: document.querySelector("#checkInBtn"),
   checkOutBtn: document.querySelector("#checkOutBtn"),
@@ -59,6 +63,8 @@ const els = {
 let records = loadJson(ATTENDANCE_KEY, []);
 let session = loadJson(SESSION_KEY, null);
 let pendingQr = getPendingQr();
+let scannerStream = null;
+let scannerTimer = null;
 
 function pad(value) {
   return String(value).padStart(2, "0");
@@ -301,6 +307,31 @@ function getPendingQr() {
   return { date, token };
 }
 
+function qrFromText(text) {
+  try {
+    const url = new URL(text);
+    const date = url.searchParams.get("absen");
+    const token = url.searchParams.get("token");
+    if (!date || !token) return null;
+    return { date, token };
+  } catch {
+    return null;
+  }
+}
+
+function activateQr(qr) {
+  if (!qr) {
+    pendingQr = null;
+    return { ok: false, message: "QR tidak valid." };
+  }
+  if (qr.date !== dateKey() || qr.token !== dailyToken(qr.date)) {
+    pendingQr = null;
+    return { ok: false, message: "QR sudah tidak berlaku untuk hari ini." };
+  }
+  pendingQr = qr;
+  return { ok: true, message: "QR berhasil dipindai. Silakan pilih Absen Datang atau Absen Pulang." };
+}
+
 function buildRows(npmList) {
   return npmList.flatMap((npm) => {
     const user = getUser(npm);
@@ -310,7 +341,7 @@ function buildRows(npmList) {
         date,
         npm,
         name: user.name,
-        status: record?.status || "alpa",
+        status: record?.status || "-",
         checkIn: record?.checkIn || record?.time || "-",
         checkOut: record?.checkOut || "-",
         reason: record?.reason || "-",
@@ -324,7 +355,7 @@ function summaryFor(npmList) {
   const counts = { hadir: 0, alpa: 0, izin: 0, sakit: 0 };
   const rows = session?.role === "admin" ? records.filter((record) => npmList.includes(record.npm)) : buildRows(npmList);
   rows.forEach((row) => {
-    counts[row.status] += 1;
+    if (counts[row.status] !== undefined) counts[row.status] += 1;
   });
   return counts;
 }
@@ -368,14 +399,20 @@ function renderTodayStatus() {
   if (!session || session.role !== "user") {
     els.todayStatus.textContent = "Admin melihat semua data peserta.";
     els.todayStatus.className = "today-status";
+    els.openScannerBtn.classList.add("hidden");
+    els.attendanceActions.classList.add("hidden");
+    els.permitForm.classList.add("hidden");
+    stopScanner();
     return;
   }
   const record = ensureModernRecord(recordFor(session.npm, dateKey()));
-  const status = record?.status || "belum absen";
+  const status = record?.status || "-";
+  const hasStartedAttendance = record?.status === "hadir" && Boolean(record.checkIn);
   els.todayStatus.textContent = status === "hadir" ? `Hadir | Masuk ${record.checkIn || "-"} | Pulang ${record.checkOut || "-"}` : status;
   els.todayStatus.className = `today-status ${record?.status || ""}`;
+  els.openScannerBtn.classList.remove("hidden");
   els.attendanceActions.classList.toggle("hidden", !pendingQr);
-  els.permitForm.classList.toggle("hidden", !pendingQr);
+  els.permitForm.classList.toggle("hidden", !pendingQr || hasStartedAttendance);
 }
 
 function renderTable() {
@@ -500,20 +537,57 @@ function renderLogin() {
   els.appView.classList.add("hidden");
   els.logoutBtn.classList.add("hidden");
   els.sessionName.textContent = "Belum login";
+  stopScanner();
 }
 
 function handlePendingQrAfterLogin() {
   if (!pendingQr || session?.role !== "user") return;
-  const { date, token } = pendingQr;
+  const result = activateQr(pendingQr);
+  setMessage(els.scanMessage, result.message, result.ok ? "success" : "error");
+  window.history.replaceState({}, document.title, window.location.pathname);
+}
 
-  if (date !== dateKey() || token !== dailyToken(date)) {
-    setMessage(els.scanMessage, "Link QR sudah tidak berlaku untuk hari ini.", "error");
+function stopScanner() {
+  if (scannerTimer) window.clearInterval(scannerTimer);
+  scannerTimer = null;
+  if (scannerStream) scannerStream.getTracks().forEach((track) => track.stop());
+  scannerStream = null;
+  if (els.scannerVideo) els.scannerVideo.srcObject = null;
+  els.scannerPanel?.classList.add("hidden");
+}
+
+async function startScanner() {
+  if (session?.role !== "user") return;
+  if (!("BarcodeDetector" in window) || !navigator.mediaDevices?.getUserMedia) {
+    setMessage(els.scanMessage, "Browser ini belum mendukung scan QR langsung. Gunakan kamera HP untuk scan QR seperti biasa.", "error");
     return;
   }
 
-  els.attendanceActions.classList.remove("hidden");
-  setMessage(els.scanMessage, "Silakan pilih Absen Datang atau Absen Pulang.", "success");
-  window.history.replaceState({}, document.title, window.location.pathname);
+  try {
+    stopScanner();
+    const detector = new BarcodeDetector({ formats: ["qr_code"] });
+    scannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    els.scannerVideo.srcObject = scannerStream;
+    els.scannerPanel.classList.remove("hidden");
+    await els.scannerVideo.play();
+    setMessage(els.scanMessage, "Arahkan kamera ke QR absensi.", "success");
+
+    scannerTimer = window.setInterval(async () => {
+      try {
+        const codes = await detector.detect(els.scannerVideo);
+        const result = activateQr(qrFromText(codes[0]?.rawValue || ""));
+        if (!result.ok) return;
+        stopScanner();
+        setMessage(els.scanMessage, result.message, "success");
+        renderTodayStatus();
+      } catch {
+        // Video frames can be temporarily unavailable while the camera warms up.
+      }
+    }, 700);
+  } catch {
+    stopScanner();
+    setMessage(els.scanMessage, "Kamera tidak bisa dibuka. Pastikan izin kamera aktif dan situs memakai HTTPS.", "error");
+  }
 }
 
 els.loginForm.addEventListener("submit", (event) => {
@@ -560,6 +634,9 @@ els.statusDateInput.addEventListener("change", () => {
   renderTable();
   renderParticipantSummary();
 });
+
+els.openScannerBtn.addEventListener("click", startScanner);
+els.closeScannerBtn.addEventListener("click", stopScanner);
 
 els.recordsBody.addEventListener("click", (event) => {
   const button = event.target.closest(".row-save");
