@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Absensi KKN Tematik Gamalama 2026</title>
     <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body>
@@ -82,33 +81,26 @@
           </div>
         </section>
 
-        <section id="qrPanel" class="panel qr-panel">
-          <div class="section-title">
-            <div>
-              <p>Kode Harian</p>
-              <h2>QR Absensi</h2>
-            </div>
-            <span class="badge" id="todayLabel">22/06/2026</span>
-          </div>
-          <div id="qrcode" class="qr-box" aria-label="QR absensi hari ini"></div>
-          <p class="daily-code">Link QR: <strong id="dailyLink">-</strong></p>
-          <p id="scanMessage" class="message" role="status"></p>
-        </section>
-
         <section id="statusPanel" class="panel status-panel">
           <div class="section-title">
             <div>
               <p>Status</p>
               <h2>Keterangan Hari Ini</h2>
             </div>
+            <span class="badge" id="todayLabel">22/06/2026</span>
           </div>
           <div class="today-status" id="todayStatus">Belum absen</div>
+          <div id="attendanceActions" class="attendance-actions hidden">
+            <button id="checkInBtn" type="button">Absen Datang</button>
+            <button id="checkOutBtn" type="button">Absen Pulang</button>
+          </div>
           <div class="legend">
-            <span><b class="dot hadir"></b>Hadir lewat scan QR</span>
+            <span><b class="dot hadir"></b>Hadir setelah absen datang</span>
             <span><b class="dot alpa"></b>Alpa jika tidak scan sampai hari berganti</span>
             <span><b class="dot izin"></b>Izin dicatat admin</span>
             <span><b class="dot sakit"></b>Sakit dicatat admin</span>
           </div>
+          <p id="scanMessage" class="message" role="status"></p>
         </section>
 
         <section class="panel table-panel">
@@ -136,9 +128,9 @@
                   <th>Tanggal</th>
                   <th>Nama</th>
                   <th>NPM</th>
+                  <th>Jam Masuk</th>
+                  <th>Jam Pulang</th>
                   <th>Status</th>
-                  <th>Jam</th>
-                  <th>Keterangan</th>
                 </tr>
               </thead>
               <tbody id="recordsBody"></tbody>

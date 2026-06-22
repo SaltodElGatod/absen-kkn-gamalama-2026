@@ -35,13 +35,13 @@ const els = {
   sakitCount: document.querySelector("#sakitCount"),
   progressText: document.querySelector("#progressText"),
   progressBar: document.querySelector("#progressBar"),
-  qrPanel: document.querySelector("#qrPanel"),
-  qrcode: document.querySelector("#qrcode"),
   todayLabel: document.querySelector("#todayLabel"),
-  dailyLink: document.querySelector("#dailyLink"),
   scanMessage: document.querySelector("#scanMessage"),
   statusPanel: document.querySelector("#statusPanel"),
   todayStatus: document.querySelector("#todayStatus"),
+  attendanceActions: document.querySelector("#attendanceActions"),
+  checkInBtn: document.querySelector("#checkInBtn"),
+  checkOutBtn: document.querySelector("#checkOutBtn"),
   adminActions: document.querySelector("#adminActions"),
   adminMessage: document.querySelector("#adminMessage"),
   statusUserInput: document.querySelector("#statusUserInput"),
@@ -57,6 +57,7 @@ const els = {
 
 let records = loadJson(ATTENDANCE_KEY, []);
 let session = loadJson(SESSION_KEY, null);
+let pendingQr = getPendingQr();
 
 function pad(value) {
   return String(value).padStart(2, "0");
@@ -144,24 +145,33 @@ function recordFor(npm, date) {
   return records.find((record) => record.npm === npm && record.date === date);
 }
 
+function currentTime() {
+  const now = new Date();
+  return `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
+function ensureModernRecord(record) {
+  if (!record) return null;
+  if (!record.checkIn && record.time && record.status === "hadir") record.checkIn = record.time;
+  if (!record.checkOut) record.checkOut = "";
+  return record;
+}
+
 function upsertRecord(npm, date, status, source) {
   const user = getUser(npm);
   if (!user || !isKknDate(date)) return { ok: false, message: "Tanggal atau akun tidak valid." };
 
-  const existing = recordFor(npm, date);
-  if (existing?.status === "hadir" && status === "hadir") {
-    return { ok: false, message: "Anda sudah absen untuk hari ini." };
-  }
+  const existing = ensureModernRecord(recordFor(npm, date));
 
-  const now = new Date();
   const payload = {
     npm,
     name: user.name,
     date,
     status,
     source,
-    time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
-    updatedAt: now.toISOString(),
+    checkIn: status === "hadir" ? existing?.checkIn || currentTime() : "",
+    checkOut: existing?.checkOut || "",
+    updatedAt: new Date().toISOString(),
   };
 
   if (existing) Object.assign(existing, payload);
@@ -169,6 +179,40 @@ function upsertRecord(npm, date, status, source) {
 
   saveRecords();
   return { ok: true, message: status === "hadir" ? "Absensi berhasil. Anda tercatat hadir hari ini." : "Status berhasil disimpan." };
+}
+
+function checkIn(npm, date) {
+  const user = getUser(npm);
+  if (!user || !isKknDate(date)) return { ok: false, message: "Tanggal atau akun tidak valid." };
+  const existing = ensureModernRecord(recordFor(npm, date));
+  if (existing?.checkIn) return { ok: false, message: "Anda sudah absen datang hari ini." };
+
+  const payload = {
+    npm,
+    name: user.name,
+    date,
+    status: "hadir",
+    source: "scan qr",
+    checkIn: currentTime(),
+    checkOut: existing?.checkOut || "",
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (existing) Object.assign(existing, payload);
+  else records.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, ...payload });
+  saveRecords();
+  return { ok: true, message: "Absen datang berhasil disimpan." };
+}
+
+function checkOut(npm, date) {
+  const existing = ensureModernRecord(recordFor(npm, date));
+  if (!existing || existing.status !== "hadir" || !existing.checkIn) return { ok: false, message: "Absen datang dulu sebelum absen pulang." };
+  if (existing.checkOut) return { ok: false, message: "Anda sudah absen pulang hari ini." };
+
+  existing.checkOut = currentTime();
+  existing.updatedAt = new Date().toISOString();
+  saveRecords();
+  return { ok: true, message: "Absen pulang berhasil disimpan." };
 }
 
 function dailyToken(key = dateKey()) {
@@ -186,6 +230,14 @@ function attendanceLink() {
   return url.toString();
 }
 
+function getPendingQr() {
+  const params = new URLSearchParams(window.location.search);
+  const date = params.get("absen");
+  const token = params.get("token");
+  if (!date || !token) return null;
+  return { date, token };
+}
+
 function buildRows(npmList) {
   return npmList.flatMap((npm) => {
     const user = getUser(npm);
@@ -196,7 +248,8 @@ function buildRows(npmList) {
         npm,
         name: user.name,
         status: record?.status || "alpa",
-        time: record?.time || "-",
+        checkIn: record?.checkIn || record?.time || "-",
+        checkOut: record?.checkOut || "-",
         source: record?.source || "otomatis",
       };
     });
@@ -218,17 +271,9 @@ function currentNpmList() {
   return selected === "all" ? USERS.map((user) => user.npm) : [selected];
 }
 
-function renderQr() {
+function renderDateLabel() {
   const today = dateKey();
-  const link = attendanceLink();
   els.todayLabel.textContent = `${displayDate(today)} | Hari ${Math.max(1, Math.min(KKN_DAYS, kknDayNumber()))}`;
-  els.dailyLink.textContent = link;
-  els.qrcode.innerHTML = "";
-  if (window.QRCode) {
-    new QRCode(els.qrcode, { text: link, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M });
-  } else {
-    els.qrcode.textContent = link;
-  }
 }
 
 function renderDashboard() {
@@ -252,10 +297,11 @@ function renderTodayStatus() {
     els.todayStatus.className = "today-status";
     return;
   }
-  const record = recordFor(session.npm, dateKey());
+  const record = ensureModernRecord(recordFor(session.npm, dateKey()));
   const status = record?.status || "belum absen";
-  els.todayStatus.textContent = status === "hadir" ? "Hadir hari ini" : status;
+  els.todayStatus.textContent = status === "hadir" ? `Hadir | Masuk ${record.checkIn || "-"} | Pulang ${record.checkOut || "-"}` : status;
   els.todayStatus.className = `today-status ${record?.status || ""}`;
+  els.attendanceActions.classList.toggle("hidden", !pendingQr);
 }
 
 function renderTable() {
@@ -273,9 +319,9 @@ function renderTable() {
         <td>${displayDate(row.date)}</td>
         <td>${escapeHtml(row.name)}</td>
         <td>${escapeHtml(row.npm)}</td>
+        <td>${escapeHtml(row.checkIn)}</td>
+        <td>${escapeHtml(row.checkOut)}</td>
         <td class="status ${escapeHtml(row.status)}">${escapeHtml(row.status)}</td>
-        <td>${escapeHtml(row.time)}</td>
-        <td>${escapeHtml(row.source)}</td>
       </tr>`,
     )
     .join("");
@@ -317,17 +363,18 @@ function renderApp() {
   const isAdmin = session?.role === "admin";
   els.loginView.classList.add("hidden");
   els.appView.classList.remove("hidden");
+  els.appView.classList.toggle("admin-layout", isAdmin);
+  els.appView.classList.toggle("user-layout", !isAdmin);
   els.logoutBtn.classList.remove("hidden");
   els.sessionName.textContent = isAdmin ? "Admin" : `${session.name} (${session.npm})`;
   els.dashboardTitle.textContent = isAdmin ? "Rekap Semua Peserta" : `Rekap ${session.name}`;
   els.tableTitle.textContent = isAdmin ? "Riwayat Semua Peserta" : "Riwayat Absensi Saya";
-  els.qrPanel.classList.toggle("hidden", isAdmin);
   els.statusPanel.classList.toggle("hidden", isAdmin);
   els.adminActions.classList.toggle("hidden", !isAdmin);
   els.adminUserFilter.classList.toggle("hidden", !isAdmin);
   els.adminSummaryPanel.classList.toggle("hidden", !isAdmin);
   if (isAdmin) renderAdminControls();
-  renderQr();
+  renderDateLabel();
   renderDashboard();
   renderTodayStatus();
   renderTable();
@@ -342,18 +389,16 @@ function renderLogin() {
 }
 
 function handlePendingQrAfterLogin() {
-  const params = new URLSearchParams(window.location.search);
-  const date = params.get("absen");
-  const token = params.get("token");
-  if (!date || !token || session?.role !== "user") return;
+  if (!pendingQr || session?.role !== "user") return;
+  const { date, token } = pendingQr;
 
   if (date !== dateKey() || token !== dailyToken(date)) {
     setMessage(els.scanMessage, "Link QR sudah tidak berlaku untuk hari ini.", "error");
     return;
   }
 
-  const result = upsertRecord(session.npm, date, "hadir", "scan qr");
-  setMessage(els.scanMessage, result.message, result.ok ? "success" : "error");
+  els.attendanceActions.classList.remove("hidden");
+  setMessage(els.scanMessage, "Silakan pilih Absen Datang atau Absen Pulang.", "success");
   window.history.replaceState({}, document.title, window.location.pathname);
 }
 
@@ -404,10 +449,28 @@ els.saveStatusBtn.addEventListener("click", () => {
   renderParticipantSummary();
 });
 
+els.checkInBtn.addEventListener("click", () => {
+  if (!pendingQr || session?.role !== "user") return;
+  const result = checkIn(session.npm, pendingQr.date);
+  setMessage(els.scanMessage, result.message, result.ok ? "success" : "error");
+  renderDashboard();
+  renderTodayStatus();
+  renderTable();
+});
+
+els.checkOutBtn.addEventListener("click", () => {
+  if (!pendingQr || session?.role !== "user") return;
+  const result = checkOut(session.npm, pendingQr.date);
+  setMessage(els.scanMessage, result.message, result.ok ? "success" : "error");
+  renderDashboard();
+  renderTodayStatus();
+  renderTable();
+});
+
 els.exportExcelBtn.addEventListener("click", () => {
   const rows = buildRows(USERS.map((user) => user.npm));
-  const headers = ["Tanggal", "Nama", "NPM", "Status", "Jam", "Keterangan"];
-  const csv = [headers, ...rows.map((row) => [displayDate(row.date), row.name, row.npm, row.status, row.time, row.source])]
+  const headers = ["Tanggal", "Nama", "NPM", "Jam Masuk", "Jam Pulang", "Status"];
+  const csv = [headers, ...rows.map((row) => [displayDate(row.date), row.name, row.npm, row.checkIn, row.checkOut, row.status])]
     .map((line) => line.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","))
     .join("\n");
   const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
@@ -431,7 +494,7 @@ if (session) {
 
 setInterval(() => {
   if (session) {
-    renderQr();
+    renderDateLabel();
     renderDashboard();
     renderTodayStatus();
     renderTable();

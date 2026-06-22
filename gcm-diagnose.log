@@ -1,0 +1,173 @@
+﻿Diagnose log at 2026-06-22T03:17:02Z
+
+AppPath: D:\Git\mingw64\bin\git-credential-manager.exe
+InstallDir: D:\Git\mingw64\bin\
+Version: 2.6.1+786ab03440ddc82e807a97c0e540f5247e44cec6
+
+------------
+Diagnostic: Environment
+Skipped: False
+Success: True
+Exception: None
+Log:
+OSType: Windows
+OSVersion: 10.0 (build 26200)
+Reading environment variables... OK
+ Variables:
+HOMEPATH=\Users\acera
+DriverData=C:\Windows\System32\Drivers\DriverData
+COMPUTERNAME=ACER
+GIT_TRACE2_PARENT_SID=034698ed-dcea-4846-8280-9c25068d1214
+CommonProgramFiles(x86)=C:\Program Files (x86)\Common Files
+OneDrive=C:\Users\acera\OneDrive
+ChocolateyLastPathUpdate=134074428799336516
+EFC_5356_4126798990=1
+SESSIONNAME=Console
+TMP=C:\Users\acera\AppData\Local\Temp
+PROCESSOR_REVISION=9a03
+USERDOMAIN_ROAMINGPROFILE=acer
+PATHEXT=.COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.PY;.PYW;.CPL
+GEMINI_CLI_IDE_WORKSPACE_PATH=d:\KKN Tematik Kel Gamalama 2026
+EFC_5356_2775293581=1
+GIT_EXEC_PATH=D:/Git/mingw64/libexec/git-core
+TEMP=C:\Users\acera\AppData\Local\Temp
+LOCALAPPDATA=C:\Users\acera\AppData\Local
+MSYSTEM=MINGW64
+TERM=xterm-256color
+VSCODE_PYTHON_AUTOACTIVATE_GUARD=1
+EFC_5356_1592913036=1
+JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-21.0.9.10-hotspot\
+USERDOMAIN=acer
+Path=D:/Git/mingw64/libexec/git-core;D:\Git\mingw64\bin;D:\Git\usr\bin;C:\Users\acera\bin;C:\Python314\Scripts\;C:\Python314\;C:\Program Files\Eclipse Adoptium\jdk-21.0.9.10-hotspot\bin;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR;C:\Program Files\dotnet\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\xampp\php;C:\composer;C:\Program Files\MySQL\MySQL Server 8.0\bin;C:\Program Files\Pragma\Clients;D:\Git\cmd;D:\src\flutter\bin;D:\flutter\src\flutter\bin;C:\ProgramData\chocolatey\bin;D:\Node.js\;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR;C:\Program Files\dotnet\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\xampp\php;C:\composer;C:\Program Files\MySQL\MySQL Server 8.0\bin;C:\Program Files\Pragma\Clients;D:\Git\cmd;D:\src\flutter\bin;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR;C:\Program Files\dotnet\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;D:\flutter\src\flutter\bin;D:\AndroidSDK\emulator;D:\AndroidSDK\platform-tools;C:\Users\acera\AppData\Local\Pub\Cache\bin;C:\Users\acera\AppData\Roaming\npm;C:\Users\acera\AppData\Local\Programs\Microsoft VS Code\bin
+TERM_PROGRAM=vscode
+PROCESSOR_LEVEL=6
+PROCESSOR_IDENTIFIER=Intel64 Family 6 Model 154 Stepping 3, GenuineIntel
+TMPDIR=C:\Users\acera\AppData\Local\Temp
+EFC_5356_2283032206=1
+TERM_PROGRAM_VERSION=1.119.0
+GIT_ASKPASS=c:\Users\acera\AppData\Local\Programs\Microsoft VS Code\8b640eef5a\resources\app\extensions\git\dist\askpass.sh
+ProgramFiles(x86)=C:\Program Files (x86)
+PUBLIC=C:\Users\Public
+NUMBER_OF_PROCESSORS=12
+FPS_BROWSER_USER_PROFILE_STRING=Default
+CommonProgramFiles=C:\Program Files (x86)\Common Files
+VSCODE_INJECTION=1
+VSCODE_GIT_IPC_HANDLE=\\.\pipe\vscode-git-0fdc01b648-sock
+CHROME_CRASHPAD_PIPE_NAME=\\.\pipe\crashpad_5292_NQSZLOIHPUBHPBVA
+VSCODE_GIT_ASKPASS_MAIN=c:\Users\acera\AppData\Local\Programs\Microsoft VS Code\8b640eef5a\resources\app\extensions\git\dist\askpass-main.js
+PLINK_PROTOCOL=ssh
+ProgramData=C:\ProgramData
+ProgramFiles=C:\Program Files (x86)
+ChocolateyInstall=C:\ProgramData\chocolatey
+CLAUDE_CODE_SSE_PORT=57023
+VSCODE_GIT_ASKPASS_EXTRA_ARGS=
+VSCODE_GIT_ASKPASS_NODE=C:\Users\acera\AppData\Local\Programs\Microsoft VS Code\Code.exe
+GEMINI_CLI_IDE_AUTH_TOKEN=8b49c0d4-c7d0-40d6-9670-71bafbd774a3
+ProgramW6432=C:\Program Files
+HOME=C:\Users\acera
+SystemRoot=C:\WINDOWS
+CommonProgramW6432=C:\Program Files\Common Files
+ZES_ENABLE_SYSMAN=1
+LOGONSERVER=\\ACER
+USERPROFILE=C:\Users\acera
+EFC_5356_3789132940=1
+COLORTERM=truecolor
+EFC_5356_1262719628=1
+APPDATA=C:\Users\acera\AppData\Roaming
+HOMEDRIVE=C:
+GEMINI_CLI_IDE_SERVER_PORT=52746
+PSModulePath=C:\Users\acera\OneDrive\Documents\WindowsPowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
+USERNAME=acer
+PROCESSOR_ARCHITEW6432=AMD64
+FPS_BROWSER_APP_PROFILE_STRING=Internet Explorer
+PROCESSOR_ARCHITECTURE=x86
+OS=Windows_NT
+ComSpec=C:\WINDOWS\system32\cmd.exe
+SystemDrive=C:
+windir=C:\WINDOWS
+LANG=en_US.UTF-8
+ALLUSERSPROFILE=C:\ProgramData
+
+
+------------
+Diagnostic: File system
+Skipped: False
+Success: True
+Exception: None
+Log:
+Temporary directory is 'C:\Users\acera\AppData\Local\Temp\'...
+Checking basic file I/O...
+Writing to temporary file 'C:\Users\acera\AppData\Local\Temp\497a4d47b0120dc5182d522e'... OK
+Reading from temporary file 'C:\Users\acera\AppData\Local\Temp\497a4d47b0120dc5182d522e'... OK
+Deleting temporary file 'C:\Users\acera\AppData\Local\Temp\497a4d47b0120dc5182d522e'... OK
+Testing IFileSystem instance...
+UserHomePath: C:\Users\acera
+UserDataDirectoryPath: C:\Users\acera\.gcm
+GetCurrentDirectory(): D:\KKN Tematik Kel Gamalama 2026
+
+------------
+Diagnostic: Networking
+Skipped: False
+Success: True
+Exception: None
+Log:
+Checking networking and HTTP stack...
+Creating HTTP client... OK
+IsNetworkAvailable: True
+Sending HEAD request to http://example.com...Sending HEAD request to https://example.com... OK
+Acquiring free TCP port... OK
+Testing local HTTP loopback connections...
+Creating new HTTP listener for http://localhost:58318/... OK
+Waiting for loopback connection... OK
+Writing response... OK
+Waiting for response data... OK
+Loopback connection data OK
+
+------------
+Diagnostic: Git
+Skipped: False
+Success: True
+Exception: None
+Log:
+Getting Git version... OK
+Git version is '2.51.0.windows.1'
+Locating current repository...Git repository at 'D:/KKN Tematik Kel Gamalama 2026/.git'
+ OK
+Listing all Git configuration... OK
+Git configuration:
+file:D:/Git/etc/gitconfig	diff.astextplain.textconv=astextplain
+file:D:/Git/etc/gitconfig	filter.lfs.clean=git-lfs clean -- %f
+file:D:/Git/etc/gitconfig	filter.lfs.smudge=git-lfs smudge -- %f
+file:D:/Git/etc/gitconfig	filter.lfs.process=git-lfs filter-process
+file:D:/Git/etc/gitconfig	filter.lfs.required=true
+file:D:/Git/etc/gitconfig	http.sslbackend=schannel
+file:D:/Git/etc/gitconfig	core.autocrlf=true
+file:D:/Git/etc/gitconfig	core.fscache=true
+file:D:/Git/etc/gitconfig	core.symlinks=false
+file:D:/Git/etc/gitconfig	pull.rebase=false
+file:D:/Git/etc/gitconfig	credential.helper=manager
+file:D:/Git/etc/gitconfig	credential.https://dev.azure.com.usehttppath=true
+file:D:/Git/etc/gitconfig	init.defaultbranch=master
+file:C:/Users/acera/.gitconfig	user.email=salwangaming1@gmail.com
+file:C:/Users/acera/.gitconfig	user.name=SaltodElGatod
+file:.git/config	core.repositoryformatversion=0
+file:.git/config	core.filemode=false
+file:.git/config	core.bare=false
+file:.git/config	core.logallrefupdates=true
+file:.git/config	core.symlinks=false
+file:.git/config	core.ignorecase=true
+file:.git/config	remote.origin.url=https://github.com/SaltodElGatod/absen-kkn-gamalama-2026.git
+file:.git/config	remote.origin.fetch=+refs/heads/*:refs/remotes/origin/*
+
+
+------------
+Diagnostic: Credential storage
+Skipped: False
+Success: True
+Exception: None
+Log:
+ICredentialStore instance is of type: CredentialStore
+Writing test credential... OK
+Reading test credential... OK
+Deleting test credential... OK
+

@@ -213,6 +213,30 @@ label {
   grid-row: span 2;
 }
 
+.user-layout .dashboard {
+  grid-column: 1 / -1;
+}
+
+.user-layout .table-panel {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.user-layout .status-panel {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.admin-layout {
+  grid-template-columns: 1fr;
+}
+
+.admin-layout .dashboard,
+.admin-layout .table-panel,
+.admin-layout .summary-panel {
+  grid-column: 1;
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -366,6 +390,18 @@ label {
   font-size: 14px;
 }
 
+.attendance-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+#checkOutBtn {
+  background: linear-gradient(135deg, var(--sea), #235d9a);
+  border-color: var(--sea);
+}
+
 .legend span {
   display: flex;
   align-items: center;
@@ -493,6 +529,60 @@ table {
   min-width: 760px;
 }
 
+.qr-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.qr-print {
+  width: min(460px, 100%);
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.qr-print > img {
+  width: 86px;
+  height: 86px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+}
+
+.qr-print p {
+  margin: 16px 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.qr-print h1 {
+  margin: 0 0 18px;
+  font-size: 28px;
+}
+
+.qr-print .qr-box {
+  min-height: 280px;
+  margin-bottom: 16px;
+}
+
+.qr-print strong,
+.qr-print span {
+  display: block;
+}
+
+.qr-print span {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
 th,
 td {
   padding: 12px;
@@ -532,6 +622,10 @@ td.status {
   }
 
   .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .attendance-actions {
     grid-template-columns: 1fr;
   }
 }

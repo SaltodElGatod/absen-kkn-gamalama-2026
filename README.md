@@ -26,12 +26,13 @@ Peserta login memakai nama lengkap sebagai username dan NPM sebagai password.
 
 ## Cara Pakai
 
-1. Admin membuka website dan menampilkan QR absensi harian.
-2. Peserta scan QR. Jika belum login, peserta akan diminta login dulu.
-3. Setelah login, link QR otomatis mencatat status `hadir` untuk akun peserta tersebut.
-4. Jika peserta tidak scan QR sampai hari berganti, riwayat akan menampilkan `alpa` otomatis.
-5. Admin bisa mencatat `izin` atau `sakit` dari panel admin.
-6. Admin bisa export data ke file CSV yang bisa dibuka di Excel.
+1. Buka `qr.html` untuk menampilkan atau mencetak QR absensi harian.
+2. Peserta scan QR dan masuk ke `index.html`. Jika belum login, peserta akan diminta login dulu.
+3. Setelah login, peserta memilih `Absen Datang` atau `Absen Pulang`.
+4. `Absen Datang` mengisi kolom `Jam Masuk`, dan `Absen Pulang` mengisi kolom `Jam Pulang`.
+5. Jika peserta tidak scan QR sampai hari berganti, riwayat akan menampilkan `alpa` otomatis.
+6. Admin bisa mencatat `izin` atau `sakit` dari panel admin.
+7. Admin bisa export data ke file CSV yang bisa dibuka di Excel.
 
 ## Catatan Database
 
