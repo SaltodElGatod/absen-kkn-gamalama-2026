@@ -449,6 +449,48 @@ label {
   margin-top: 14px;
 }
 
+.permit-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.permit-type {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.permit-type label {
+  display: block;
+  cursor: pointer;
+}
+
+.permit-type input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.permit-type span {
+  display: grid;
+  min-height: 42px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  background: #fff;
+  font-weight: 700;
+}
+
+.permit-type input:checked + span {
+  color: #fff;
+  background: linear-gradient(135deg, var(--gold), var(--sea));
+  border-color: var(--sea);
+}
+
 #checkOutBtn {
   background: linear-gradient(135deg, var(--sea), #235d9a);
   border-color: var(--sea);
@@ -579,7 +621,7 @@ td.status.sakit {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 760px;
+  min-width: 940px;
 }
 
 .qr-page {
@@ -700,6 +742,10 @@ td.status {
   }
 
   .attendance-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .permit-type {
     grid-template-columns: 1fr;
   }
 }

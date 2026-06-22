@@ -1,6 +1,6 @@
 const KKN_START = new Date(2026, 5, 22);
 const KKN_DAYS = 40;
-const ATTENDANCE_KEY = "kkn-gamalama-attendance-v2";
+const ATTENDANCE_KEY = "kkn-gamalama-attendance-v3";
 const SESSION_KEY = "kkn-gamalama-session-v2";
 
 const USERS = [
@@ -42,6 +42,8 @@ const els = {
   attendanceActions: document.querySelector("#attendanceActions"),
   checkInBtn: document.querySelector("#checkInBtn"),
   checkOutBtn: document.querySelector("#checkOutBtn"),
+  permitForm: document.querySelector("#permitForm"),
+  permitReasonInput: document.querySelector("#permitReasonInput"),
   adminActions: document.querySelector("#adminActions"),
   adminMessage: document.querySelector("#adminMessage"),
   statusDateInput: document.querySelector("#statusDateInput"),
@@ -170,6 +172,7 @@ function upsertRecord(npm, date, status, source) {
     source,
     checkIn: status === "hadir" ? existing?.checkIn || currentTime() : "",
     checkOut: existing?.checkOut || "",
+    reason: "",
     updatedAt: new Date().toISOString(),
   };
 
@@ -188,7 +191,7 @@ function saveAdminEdit(npm, date, status, checkIn, checkOut) {
   if (!status || status === "alpa") {
     records = records.filter((record) => !(record.npm === npm && record.date === date));
     saveRecords();
-    return { ok: true, message: status ? "Status dikembalikan ke alpa." : "Riwayat tanggal ini dikosongkan." };
+    return { ok: true, message: "Riwayat tanggal ini dikosongkan." };
   }
 
   if ((checkIn || checkOut) && status !== "hadir") return { ok: false, message: "Jam masuk/pulang hanya dipakai untuk status hadir." };
@@ -202,6 +205,7 @@ function saveAdminEdit(npm, date, status, checkIn, checkOut) {
     source: "edit admin",
     checkIn: status === "hadir" ? checkIn : "",
     checkOut: status === "hadir" ? checkOut : "",
+    reason: existing?.reason || "",
     updatedAt: new Date().toISOString(),
   };
 
@@ -210,6 +214,33 @@ function saveAdminEdit(npm, date, status, checkIn, checkOut) {
 
   saveRecords();
   return { ok: true, message: "Perubahan absensi berhasil disimpan." };
+}
+
+function savePermit(npm, date, status, reason) {
+  const user = getUser(npm);
+  const cleanReason = reason.trim();
+  if (!user || !isKknDate(date)) return { ok: false, message: "Tanggal atau akun tidak valid." };
+  if (!["izin", "sakit"].includes(status)) return { ok: false, message: "Pilih izin atau sakit." };
+  if (cleanReason.length < 5) return { ok: false, message: "Alasan minimal 5 karakter." };
+
+  const existing = ensureModernRecord(recordFor(npm, date));
+  const payload = {
+    npm,
+    name: user.name,
+    date,
+    status,
+    source: "keterangan peserta",
+    checkIn: "",
+    checkOut: "",
+    reason: cleanReason,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (existing) Object.assign(existing, payload);
+  else records.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, ...payload });
+
+  saveRecords();
+  return { ok: true, message: `Keterangan ${status} berhasil dikirim.` };
 }
 
 function checkIn(npm, date) {
@@ -226,6 +257,7 @@ function checkIn(npm, date) {
     source: "scan qr",
     checkIn: currentTime(),
     checkOut: existing?.checkOut || "",
+    reason: "",
     updatedAt: new Date().toISOString(),
   };
 
@@ -281,6 +313,7 @@ function buildRows(npmList) {
         status: record?.status || "alpa",
         checkIn: record?.checkIn || record?.time || "-",
         checkOut: record?.checkOut || "-",
+        reason: record?.reason || "-",
         source: record?.source || "otomatis",
       };
     });
@@ -289,7 +322,8 @@ function buildRows(npmList) {
 
 function summaryFor(npmList) {
   const counts = { hadir: 0, alpa: 0, izin: 0, sakit: 0 };
-  buildRows(npmList).forEach((row) => {
+  const rows = session?.role === "admin" ? records.filter((record) => npmList.includes(record.npm)) : buildRows(npmList);
+  rows.forEach((row) => {
     counts[row.status] += 1;
   });
   return counts;
@@ -341,6 +375,7 @@ function renderTodayStatus() {
   els.todayStatus.textContent = status === "hadir" ? `Hadir | Masuk ${record.checkIn || "-"} | Pulang ${record.checkOut || "-"}` : status;
   els.todayStatus.className = `today-status ${record?.status || ""}`;
   els.attendanceActions.classList.toggle("hidden", !pendingQr);
+  els.permitForm.classList.toggle("hidden", !pendingQr);
 }
 
 function renderTable() {
@@ -350,7 +385,7 @@ function renderTable() {
     return byDate || a.name.localeCompare(b.name);
   });
   if (rows.length === 0) {
-    els.recordsBody.innerHTML = `<tr><td colspan="${isAdmin ? 7 : 6}">Belum ada data absensi.</td></tr>`;
+    els.recordsBody.innerHTML = `<tr><td colspan="${isAdmin ? 8 : 7}">Belum ada data absensi.</td></tr>`;
     return;
   }
   els.actionHeader.classList.toggle("hidden", !isAdmin);
@@ -375,9 +410,10 @@ function buildRowsForAdminDate() {
       date,
       npm: user.npm,
       name: user.name,
-      status: future ? "" : record?.status || "alpa",
+      status: future ? "" : record?.status || "",
       checkIn: future ? "" : record?.checkIn || record?.time || "",
       checkOut: future ? "" : record?.checkOut || "",
+      reason: future ? "" : record?.reason || "",
       source: record?.source || (future ? "" : "otomatis"),
     };
   });
@@ -388,6 +424,7 @@ function readonlyCells(row) {
     <td>${escapeHtml(row.checkIn)}</td>
     <td>${escapeHtml(row.checkOut)}</td>
     <td class="status ${escapeHtml(row.status)}">${escapeHtml(row.status)}</td>
+    <td>${escapeHtml(row.reason)}</td>
   `;
 }
 
@@ -399,6 +436,7 @@ function adminEditableCells(row) {
     <td><input class="table-input" data-field="checkIn" data-npm="${escapeHtml(row.npm)}" type="time" value="${escapeHtml(row.checkIn)}" /></td>
     <td><input class="table-input" data-field="checkOut" data-npm="${escapeHtml(row.npm)}" type="time" value="${escapeHtml(row.checkOut)}" /></td>
     <td><select class="table-input status-select" data-field="status" data-npm="${escapeHtml(row.npm)}">${statusOptions}</select></td>
+    <td>${escapeHtml(row.reason || "-")}</td>
     <td><button class="row-save" type="button" data-npm="${escapeHtml(row.npm)}">Simpan</button></td>
   `;
 }
@@ -557,10 +595,29 @@ els.checkOutBtn.addEventListener("click", () => {
   renderTable();
 });
 
+els.permitForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!pendingQr || session?.role !== "user") return;
+  const permitType = new FormData(els.permitForm).get("permitType");
+  const result = savePermit(session.npm, pendingQr.date, permitType, els.permitReasonInput.value);
+  setMessage(els.scanMessage, result.message, result.ok ? "success" : "error");
+  if (result.ok) els.permitForm.reset();
+  renderDashboard();
+  renderTodayStatus();
+  renderTable();
+});
+
 els.exportExcelBtn.addEventListener("click", () => {
-  const rows = buildRows(USERS.map((user) => user.npm));
-  const headers = ["Tanggal", "Nama", "NPM", "Jam Masuk", "Jam Pulang", "Status"];
-  const csv = [headers, ...rows.map((row) => [displayDate(row.date), row.name, row.npm, row.checkIn, row.checkOut, row.status])]
+  const rows = records
+    .filter((record) => USERS.some((user) => user.npm === record.npm))
+    .map((record) => ({
+      ...record,
+      checkIn: record.checkIn || record.time || "",
+      checkOut: record.checkOut || "",
+      reason: record.reason || "",
+    }));
+  const headers = ["Tanggal", "Nama", "NPM", "Jam Masuk", "Jam Pulang", "Status", "Alasan"];
+  const csv = [headers, ...rows.map((row) => [displayDate(row.date), row.name, row.npm, row.checkIn, row.checkOut, row.status, row.reason])]
     .map((line) => line.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","))
     .join("\n");
   const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
