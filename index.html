@@ -41,7 +41,15 @@
             </label>
             <label>
               Password
-              <input id="passwordInput" type="password" autocomplete="current-password" placeholder="NPM peserta / admin123" required />
+              <span class="password-field">
+                <input id="passwordInput" type="password" autocomplete="current-password" placeholder="NPM peserta" required />
+                <button id="togglePasswordBtn" class="icon-button" type="button" aria-label="Lihat sandi" title="Lihat sandi">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </span>
             </label>
             <button type="submit">Masuk</button>
           </form>
@@ -56,7 +64,6 @@
               <p>Dashboard</p>
               <h2 id="dashboardTitle">Rekap Absensi</h2>
             </div>
-            <select id="adminUserFilter" class="hidden" aria-label="Pilih peserta"></select>
           </div>
 
           <div class="stats">
@@ -80,7 +87,7 @@
 
           <div class="progress-wrap">
             <div class="progress-label">
-              <span>Progres 40 hari KKN</span>
+              <span id="progressLabel">Progres absensi</span>
               <strong id="progressText">0/40</strong>
             </div>
             <div class="progress-bar"><span id="progressBar"></span></div>
@@ -103,8 +110,8 @@
           <div class="legend">
             <span><b class="dot hadir"></b>Hadir setelah absen datang</span>
             <span><b class="dot alpa"></b>Alpa jika tidak scan sampai hari berganti</span>
-            <span><b class="dot izin"></b>Izin dicatat admin</span>
-            <span><b class="dot sakit"></b>Sakit dicatat admin</span>
+            <span><b class="dot izin"></b>Izin berdasarkan konfirmasi admin</span>
+            <span><b class="dot sakit"></b>Sakit berdasarkan konfirmasi admin</span>
           </div>
           <p id="scanMessage" class="message" role="status"></p>
         </section>
@@ -116,13 +123,7 @@
               <h2 id="tableTitle">Riwayat Absensi</h2>
             </div>
             <div id="adminActions" class="actions hidden">
-              <select id="statusUserInput" aria-label="Peserta untuk izin atau sakit"></select>
-              <select id="statusTypeInput" aria-label="Status manual">
-                <option value="izin">Izin</option>
-                <option value="sakit">Sakit</option>
-              </select>
               <input id="statusDateInput" type="date" />
-              <button id="saveStatusBtn" type="button">Simpan</button>
               <button id="exportExcelBtn" type="button">Export Excel</button>
               <a id="openQrBtn" class="button-link" href="qr.html" target="_blank" rel="noopener">Buka QR</a>
               <p id="adminMessage" class="message admin-message" role="status"></p>
@@ -138,6 +139,7 @@
                   <th>Jam Masuk</th>
                   <th>Jam Pulang</th>
                   <th>Status</th>
+                  <th id="actionHeader" class="hidden">Aksi</th>
                 </tr>
               </thead>
               <tbody id="recordsBody"></tbody>

@@ -40,7 +40,6 @@ const day = Math.max(1, Math.min(KKN_DAYS, kknDayNumber()));
 const link = attendanceLink();
 
 document.querySelector("#qrDate").textContent = `${displayDate(today)} | Hari ${day}`;
-document.querySelector("#qrLink").textContent = link;
 
 if (window.QRCode) {
   new QRCode(document.querySelector("#externalQr"), {
@@ -50,5 +49,5 @@ if (window.QRCode) {
     correctLevel: QRCode.CorrectLevel.M,
   });
 } else {
-  document.querySelector("#externalQr").textContent = link;
+  document.querySelector("#externalQr").textContent = "QR gagal dimuat.";
 }

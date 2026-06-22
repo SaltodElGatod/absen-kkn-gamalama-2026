@@ -28,11 +28,11 @@ const els = {
   sessionName: document.querySelector("#sessionName"),
   logoutBtn: document.querySelector("#logoutBtn"),
   dashboardTitle: document.querySelector("#dashboardTitle"),
-  adminUserFilter: document.querySelector("#adminUserFilter"),
   hadirCount: document.querySelector("#hadirCount"),
   alpaCount: document.querySelector("#alpaCount"),
   izinCount: document.querySelector("#izinCount"),
   sakitCount: document.querySelector("#sakitCount"),
+  progressLabel: document.querySelector("#progressLabel"),
   progressText: document.querySelector("#progressText"),
   progressBar: document.querySelector("#progressBar"),
   todayLabel: document.querySelector("#todayLabel"),
@@ -44,15 +44,14 @@ const els = {
   checkOutBtn: document.querySelector("#checkOutBtn"),
   adminActions: document.querySelector("#adminActions"),
   adminMessage: document.querySelector("#adminMessage"),
-  statusUserInput: document.querySelector("#statusUserInput"),
-  statusTypeInput: document.querySelector("#statusTypeInput"),
   statusDateInput: document.querySelector("#statusDateInput"),
-  saveStatusBtn: document.querySelector("#saveStatusBtn"),
   exportExcelBtn: document.querySelector("#exportExcelBtn"),
   tableTitle: document.querySelector("#tableTitle"),
   recordsBody: document.querySelector("#recordsBody"),
+  actionHeader: document.querySelector("#actionHeader"),
   adminSummaryPanel: document.querySelector("#adminSummaryPanel"),
   participantGrid: document.querySelector("#participantGrid"),
+  togglePasswordBtn: document.querySelector("#togglePasswordBtn"),
 };
 
 let records = loadJson(ATTENDANCE_KEY, []);
@@ -181,6 +180,38 @@ function upsertRecord(npm, date, status, source) {
   return { ok: true, message: status === "hadir" ? "Absensi berhasil. Anda tercatat hadir hari ini." : "Status berhasil disimpan." };
 }
 
+function saveAdminEdit(npm, date, status, checkIn, checkOut) {
+  const user = getUser(npm);
+  if (!user || !isKknDate(date)) return { ok: false, message: "Tanggal atau akun tidak valid." };
+
+  const existing = ensureModernRecord(recordFor(npm, date));
+  if (!status || status === "alpa") {
+    records = records.filter((record) => !(record.npm === npm && record.date === date));
+    saveRecords();
+    return { ok: true, message: status ? "Status dikembalikan ke alpa." : "Riwayat tanggal ini dikosongkan." };
+  }
+
+  if ((checkIn || checkOut) && status !== "hadir") return { ok: false, message: "Jam masuk/pulang hanya dipakai untuk status hadir." };
+  if (checkOut && !checkIn) return { ok: false, message: "Isi jam masuk sebelum jam pulang." };
+
+  const payload = {
+    npm,
+    name: user.name,
+    date,
+    status,
+    source: "edit admin",
+    checkIn: status === "hadir" ? checkIn : "",
+    checkOut: status === "hadir" ? checkOut : "",
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (existing) Object.assign(existing, payload);
+  else records.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, ...payload });
+
+  saveRecords();
+  return { ok: true, message: "Perubahan absensi berhasil disimpan." };
+}
+
 function checkIn(npm, date) {
   const user = getUser(npm);
   if (!user || !isKknDate(date)) return { ok: false, message: "Tanggal atau akun tidak valid." };
@@ -267,8 +298,15 @@ function summaryFor(npmList) {
 function currentNpmList() {
   if (!session) return [];
   if (session.role === "user") return [session.npm];
-  const selected = els.adminUserFilter.value;
-  return selected === "all" ? USERS.map((user) => user.npm) : [selected];
+  return USERS.map((user) => user.npm);
+}
+
+function selectedAdminDate() {
+  return els.statusDateInput.value || dateKey();
+}
+
+function isFutureDate(key) {
+  return key > dateKey();
 }
 
 function renderDateLabel() {
@@ -283,6 +321,7 @@ function renderDashboard() {
   const totalSlots = Math.max(1, elapsedKknDates().length * Math.max(1, npmList.length));
   const progress = Math.round((totalDone / totalSlots) * 100);
 
+  els.progressLabel.textContent = session?.role === "admin" ? "Progres hari berjalan" : "Progres absensi saya";
   els.hadirCount.textContent = counts.hadir;
   els.alpaCount.textContent = counts.alpa;
   els.izinCount.textContent = counts.izin;
@@ -305,26 +344,67 @@ function renderTodayStatus() {
 }
 
 function renderTable() {
-  const rows = buildRows(currentNpmList()).sort((a, b) => {
+  const isAdmin = session?.role === "admin";
+  const rows = (isAdmin ? buildRowsForAdminDate() : buildRows(currentNpmList())).sort((a, b) => {
     const byDate = b.date.localeCompare(a.date);
     return byDate || a.name.localeCompare(b.name);
   });
   if (rows.length === 0) {
-    els.recordsBody.innerHTML = `<tr><td colspan="6">Belum ada data absensi.</td></tr>`;
+    els.recordsBody.innerHTML = `<tr><td colspan="${isAdmin ? 7 : 6}">Belum ada data absensi.</td></tr>`;
     return;
   }
+  els.actionHeader.classList.toggle("hidden", !isAdmin);
   els.recordsBody.innerHTML = rows
     .map(
       (row) => `<tr>
         <td>${displayDate(row.date)}</td>
         <td>${escapeHtml(row.name)}</td>
         <td>${escapeHtml(row.npm)}</td>
-        <td>${escapeHtml(row.checkIn)}</td>
-        <td>${escapeHtml(row.checkOut)}</td>
-        <td class="status ${escapeHtml(row.status)}">${escapeHtml(row.status)}</td>
+        ${isAdmin ? adminEditableCells(row) : readonlyCells(row)}
       </tr>`,
     )
     .join("");
+}
+
+function buildRowsForAdminDate() {
+  const date = selectedAdminDate();
+  return USERS.map((user) => {
+    const record = recordFor(user.npm, date);
+    const future = isFutureDate(date);
+    return {
+      date,
+      npm: user.npm,
+      name: user.name,
+      status: future ? "" : record?.status || "alpa",
+      checkIn: future ? "" : record?.checkIn || record?.time || "",
+      checkOut: future ? "" : record?.checkOut || "",
+      source: record?.source || (future ? "" : "otomatis"),
+    };
+  });
+}
+
+function readonlyCells(row) {
+  return `
+    <td>${escapeHtml(row.checkIn)}</td>
+    <td>${escapeHtml(row.checkOut)}</td>
+    <td class="status ${escapeHtml(row.status)}">${escapeHtml(row.status)}</td>
+  `;
+}
+
+function adminEditableCells(row) {
+  const statusOptions = ["", "hadir", "izin", "sakit", "alpa"]
+    .map((status) => `<option value="${status}" ${row.status === status ? "selected" : ""}>${status || "Kosong"}</option>`)
+    .join("");
+  return `
+    <td><input class="table-input" data-field="checkIn" data-npm="${escapeHtml(row.npm)}" type="time" value="${escapeHtml(row.checkIn)}" /></td>
+    <td><input class="table-input" data-field="checkOut" data-npm="${escapeHtml(row.npm)}" type="time" value="${escapeHtml(row.checkOut)}" /></td>
+    <td><select class="table-input status-select" data-field="status" data-npm="${escapeHtml(row.npm)}">${statusOptions}</select></td>
+    <td><button class="row-save" type="button" data-npm="${escapeHtml(row.npm)}">Simpan</button></td>
+  `;
+}
+
+function adminRowValue(npm, field) {
+  return Array.from(els.recordsBody.querySelectorAll(`[data-field="${field}"]`)).find((input) => input.dataset.npm === npm)?.value || "";
 }
 
 function renderParticipantSummary() {
@@ -351,10 +431,7 @@ function renderParticipantSummary() {
 }
 
 function renderAdminControls() {
-  const userOptions = USERS.map((user) => `<option value="${user.npm}">${escapeHtml(user.name)} - ${user.npm}</option>`).join("");
-  els.adminUserFilter.innerHTML = `<option value="all">Semua peserta</option>${userOptions}`;
-  els.statusUserInput.innerHTML = userOptions;
-  els.statusDateInput.value = dateKey();
+  if (!els.statusDateInput.value) els.statusDateInput.value = dateKey();
   els.statusDateInput.min = dateKey(KKN_START);
   els.statusDateInput.max = dateKey(kknEndDate());
 }
@@ -371,7 +448,6 @@ function renderApp() {
   els.tableTitle.textContent = isAdmin ? "Riwayat Semua Peserta" : "Riwayat Absensi Saya";
   els.statusPanel.classList.toggle("hidden", isAdmin);
   els.adminActions.classList.toggle("hidden", !isAdmin);
-  els.adminUserFilter.classList.toggle("hidden", !isAdmin);
   els.adminSummaryPanel.classList.toggle("hidden", !isAdmin);
   if (isAdmin) renderAdminControls();
   renderDateLabel();
@@ -434,17 +510,31 @@ els.logoutBtn.addEventListener("click", () => {
   renderLogin();
 });
 
-els.adminUserFilter.addEventListener("change", () => {
+els.togglePasswordBtn.addEventListener("click", () => {
+  const showPassword = els.passwordInput.type === "password";
+  els.passwordInput.type = showPassword ? "text" : "password";
+  els.togglePasswordBtn.setAttribute("aria-label", showPassword ? "Sembunyikan sandi" : "Lihat sandi");
+  els.togglePasswordBtn.setAttribute("title", showPassword ? "Sembunyikan sandi" : "Lihat sandi");
+});
+
+els.statusDateInput.addEventListener("change", () => {
   renderDashboard();
   renderTable();
   renderParticipantSummary();
 });
 
-els.saveStatusBtn.addEventListener("click", () => {
-  const result = upsertRecord(els.statusUserInput.value, els.statusDateInput.value, els.statusTypeInput.value, "input admin");
+els.recordsBody.addEventListener("click", (event) => {
+  const button = event.target.closest(".row-save");
+  if (!button || session?.role !== "admin") return;
+
+  const npm = button.dataset.npm;
+  const date = selectedAdminDate();
+  const status = adminRowValue(npm, "status");
+  const checkIn = adminRowValue(npm, "checkIn");
+  const checkOut = adminRowValue(npm, "checkOut");
+  const result = saveAdminEdit(npm, date, status, checkIn, checkOut);
   setMessage(els.adminMessage, result.message, result.ok ? "success" : "error");
   renderDashboard();
-  renderTodayStatus();
   renderTable();
   renderParticipantSummary();
 });
