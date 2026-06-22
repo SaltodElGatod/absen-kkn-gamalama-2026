@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Absensi KKN Tematik Gamalama 2026</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <img src="assets/Logo_KKN_Kel_Gamalama.jpeg" alt="Logo KKN Kelurahan Gamalama 2026" />
+        <div>
+          <p>KKN Tematik</p>
+          <h1>Kel. Gamalama 2026</h1>
+        </div>
+      </div>
+      <div class="session">
+        <span id="sessionName">Belum login</span>
+        <button id="logoutBtn" type="button" class="ghost hidden">Keluar</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="loginView" class="login-shell">
+        <div class="login-card">
+          <img src="assets/Logo_KKN_Kel_Gamalama.jpeg" alt="Logo KKN Kelurahan Gamalama 2026" />
+          <p>Absensi KKN Tematik</p>
+          <h2>Masuk Akun</h2>
+          <form id="loginForm">
+            <label>
+              Username
+              <input id="usernameInput" type="text" autocomplete="username" placeholder="Contoh: Rusdi Usman" required />
+            </label>
+            <label>
+              Password
+              <input id="passwordInput" type="password" autocomplete="current-password" placeholder="NPM peserta / admin123" required />
+            </label>
+            <button type="submit">Masuk</button>
+          </form>
+          <p id="loginMessage" class="message" role="status"></p>
+        </div>
+      </section>
+
+      <section id="appView" class="layout hidden">
+        <section class="panel dashboard">
+          <div class="section-title">
+            <div>
+              <p>Dashboard</p>
+              <h2 id="dashboardTitle">Rekap Absensi</h2>
+            </div>
+            <select id="adminUserFilter" class="hidden" aria-label="Pilih peserta"></select>
+          </div>
+
+          <div class="stats">
+            <article>
+              <span>Hadir</span>
+              <strong id="hadirCount">0</strong>
+            </article>
+            <article>
+              <span>Alpa</span>
+              <strong id="alpaCount">0</strong>
+            </article>
+            <article>
+              <span>Izin</span>
+              <strong id="izinCount">0</strong>
+            </article>
+            <article>
+              <span>Sakit</span>
+              <strong id="sakitCount">0</strong>
+            </article>
+          </div>
+
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>Progres 40 hari KKN</span>
+              <strong id="progressText">0/40</strong>
+            </div>
+            <div class="progress-bar"><span id="progressBar"></span></div>
+          </div>
+        </section>
+
+        <section id="qrPanel" class="panel qr-panel">
+          <div class="section-title">
+            <div>
+              <p>Kode Harian</p>
+              <h2>QR Absensi</h2>
+            </div>
+            <span class="badge" id="todayLabel">22/06/2026</span>
+          </div>
+          <div id="qrcode" class="qr-box" aria-label="QR absensi hari ini"></div>
+          <p class="daily-code">Link QR: <strong id="dailyLink">-</strong></p>
+          <p id="scanMessage" class="message" role="status"></p>
+        </section>
+
+        <section id="statusPanel" class="panel status-panel">
+          <div class="section-title">
+            <div>
+              <p>Status</p>
+              <h2>Keterangan Hari Ini</h2>
+            </div>
+          </div>
+          <div class="today-status" id="todayStatus">Belum absen</div>
+          <div class="legend">
+            <span><b class="dot hadir"></b>Hadir lewat scan QR</span>
+            <span><b class="dot alpa"></b>Alpa jika tidak scan sampai hari berganti</span>
+            <span><b class="dot izin"></b>Izin dicatat admin</span>
+            <span><b class="dot sakit"></b>Sakit dicatat admin</span>
+          </div>
+        </section>
+
+        <section class="panel table-panel">
+          <div class="section-title">
+            <div>
+              <p>Database</p>
+              <h2 id="tableTitle">Riwayat Absensi</h2>
+            </div>
+            <div id="adminActions" class="actions hidden">
+              <select id="statusUserInput" aria-label="Peserta untuk izin atau sakit"></select>
+              <select id="statusTypeInput" aria-label="Status manual">
+                <option value="izin">Izin</option>
+                <option value="sakit">Sakit</option>
+              </select>
+              <input id="statusDateInput" type="date" />
+              <button id="saveStatusBtn" type="button">Simpan</button>
+              <button id="exportExcelBtn" type="button">Export Excel</button>
+              <p id="adminMessage" class="message admin-message" role="status"></p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Nama</th>
+                  <th>NPM</th>
+                  <th>Status</th>
+                  <th>Jam</th>
+                  <th>Keterangan</th>
+                </tr>
+              </thead>
+              <tbody id="recordsBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="adminSummaryPanel" class="panel summary-panel hidden">
+          <div class="section-title">
+            <div>
+              <p>Peserta</p>
+              <h2>Ringkasan Per Orang</h2>
+            </div>
+          </div>
+          <div id="participantGrid" class="participant-grid"></div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
