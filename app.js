@@ -2,6 +2,8 @@ const KKN_START = new Date(2026, 5, 22);
 const KKN_DAYS = 40;
 const ATTENDANCE_KEY = "kkn-gamalama-attendance-v3";
 const SESSION_KEY = "kkn-gamalama-session-v2";
+const SUPABASE_URL = "https://tlgvzczyqdpppmtsrdmv.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_DGszQwtBjvwej7H7gbVKoA_Bob11TVh";
 
 const USERS = [
   { name: "Rusdi Usman", npm: "04392211024" },
@@ -65,6 +67,8 @@ let session = loadJson(SESSION_KEY, null);
 let pendingQr = getPendingQr();
 let scannerStream = null;
 let scannerTimer = null;
+let dbReady = false;
+let dbClient = null;
 
 function pad(value) {
   return String(value).padStart(2, "0");
@@ -117,6 +121,67 @@ function saveRecords() {
   localStorage.setItem(ATTENDANCE_KEY, JSON.stringify(records));
 }
 
+function initDatabase() {
+  const hasKey = SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("ISI_PUBLISHABLE_KEY");
+  if (!hasKey || !window.supabase?.createClient) return;
+  dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  dbReady = true;
+}
+
+function fromDbRecord(row) {
+  return {
+    id: row.id,
+    npm: row.npm,
+    name: row.name,
+    date: row.date,
+    status: row.status,
+    source: row.source || "",
+    checkIn: row.check_in || "",
+    checkOut: row.check_out || "",
+    reason: row.reason || "",
+    updatedAt: row.updated_at || "",
+  };
+}
+
+function toDbRecord(record) {
+  return {
+    npm: record.npm,
+    name: record.name,
+    date: record.date,
+    status: record.status,
+    check_in: record.checkIn || null,
+    check_out: record.checkOut || null,
+    reason: record.reason || "",
+    source: record.source || "",
+    updated_at: new Date().toISOString(),
+  };
+}
+
+async function loadRemoteRecords() {
+  if (!dbReady) return;
+  const { data, error } = await dbClient.from("attendance").select("*").order("date", { ascending: false });
+  if (error) throw error;
+  records = (data || []).map(fromDbRecord);
+  saveRecords();
+}
+
+async function syncRecord(record) {
+  saveRecords();
+  if (!dbReady) return;
+  const { error } = await dbClient.from("attendance").upsert(toDbRecord(record), { onConflict: "npm,date" });
+  if (error) throw error;
+  await loadRemoteRecords();
+}
+
+async function deleteRemoteRecord(npm, date) {
+  records = records.filter((record) => !(record.npm === npm && record.date === date));
+  saveRecords();
+  if (!dbReady) return;
+  const { error } = await dbClient.from("attendance").delete().eq("npm", npm).eq("date", date);
+  if (error) throw error;
+  await loadRemoteRecords();
+}
+
 function saveSession() {
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
 }
@@ -164,7 +229,7 @@ function ensureModernRecord(record) {
   return record;
 }
 
-function upsertRecord(npm, date, status, source) {
+async function upsertRecord(npm, date, status, source) {
   const user = getUser(npm);
   if (!user || !isKknDate(date)) return { ok: false, message: "Tanggal atau akun tidak valid." };
 
@@ -185,18 +250,17 @@ function upsertRecord(npm, date, status, source) {
   if (existing) Object.assign(existing, payload);
   else records.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, ...payload });
 
-  saveRecords();
+  await syncRecord(existing || payload);
   return { ok: true, message: status === "hadir" ? "Absensi berhasil. Anda tercatat hadir hari ini." : "Status berhasil disimpan." };
 }
 
-function saveAdminEdit(npm, date, status, checkIn, checkOut) {
+async function saveAdminEdit(npm, date, status, checkIn, checkOut) {
   const user = getUser(npm);
   if (!user || !isKknDate(date)) return { ok: false, message: "Tanggal atau akun tidak valid." };
 
   const existing = ensureModernRecord(recordFor(npm, date));
   if (!status || status === "alpa") {
-    records = records.filter((record) => !(record.npm === npm && record.date === date));
-    saveRecords();
+    await deleteRemoteRecord(npm, date);
     return { ok: true, message: "Riwayat tanggal ini dikosongkan." };
   }
 
@@ -218,11 +282,11 @@ function saveAdminEdit(npm, date, status, checkIn, checkOut) {
   if (existing) Object.assign(existing, payload);
   else records.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, ...payload });
 
-  saveRecords();
+  await syncRecord(existing || payload);
   return { ok: true, message: "Perubahan absensi berhasil disimpan." };
 }
 
-function savePermit(npm, date, status, reason) {
+async function savePermit(npm, date, status, reason) {
   const user = getUser(npm);
   const cleanReason = reason.trim();
   if (!user || !isKknDate(date)) return { ok: false, message: "Tanggal atau akun tidak valid." };
@@ -245,11 +309,11 @@ function savePermit(npm, date, status, reason) {
   if (existing) Object.assign(existing, payload);
   else records.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, ...payload });
 
-  saveRecords();
+  await syncRecord(existing || payload);
   return { ok: true, message: `Keterangan ${status} berhasil dikirim.` };
 }
 
-function checkIn(npm, date) {
+async function checkIn(npm, date) {
   const user = getUser(npm);
   if (!user || !isKknDate(date)) return { ok: false, message: "Tanggal atau akun tidak valid." };
   const existing = ensureModernRecord(recordFor(npm, date));
@@ -269,18 +333,18 @@ function checkIn(npm, date) {
 
   if (existing) Object.assign(existing, payload);
   else records.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, ...payload });
-  saveRecords();
+  await syncRecord(existing || payload);
   return { ok: true, message: "Absen datang berhasil disimpan." };
 }
 
-function checkOut(npm, date) {
+async function checkOut(npm, date) {
   const existing = ensureModernRecord(recordFor(npm, date));
   if (!existing || existing.status !== "hadir" || !existing.checkIn) return { ok: false, message: "Absen datang dulu sebelum absen pulang." };
   if (existing.checkOut) return { ok: false, message: "Anda sudah absen pulang hari ini." };
 
   existing.checkOut = currentTime();
   existing.updatedAt = new Date().toISOString();
-  saveRecords();
+  await syncRecord(existing);
   return { ok: true, message: "Absen pulang berhasil disimpan." };
 }
 
@@ -386,7 +450,7 @@ function renderDashboard() {
   const totalSlots = Math.max(1, elapsedKknDates().length * Math.max(1, npmList.length));
   const progress = Math.round((totalDone / totalSlots) * 100);
 
-  els.progressLabel.textContent = session?.role === "admin" ? "Progres hari berjalan" : "Progres absensi saya";
+  els.progressLabel.textContent = session?.role === "admin" ? "Progres absensi" : "Progres absensi saya";
   els.hadirCount.textContent = counts.hadir;
   els.alpaCount.textContent = counts.alpa;
   els.izinCount.textContent = counts.izin;
@@ -546,6 +610,16 @@ function handlePendingQrAfterLogin() {
   window.history.replaceState({}, document.title, window.location.pathname);
 }
 
+async function refreshRemoteData() {
+  if (!dbReady) return;
+  try {
+    await loadRemoteRecords();
+  } catch {
+    const target = session?.role === "admin" ? els.adminMessage : els.scanMessage;
+    if (target) setMessage(target, "Data online belum bisa dimuat. Cek koneksi atau key Supabase.", "error");
+  }
+}
+
 function stopScanner() {
   if (scannerTimer) window.clearInterval(scannerTimer);
   scannerTimer = null;
@@ -589,7 +663,7 @@ async function startScanner() {
   }
 }
 
-els.loginForm.addEventListener("submit", (event) => {
+els.loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const username = els.usernameInput.value.trim();
   const password = els.passwordInput.value.trim();
@@ -606,6 +680,7 @@ els.loginForm.addEventListener("submit", (event) => {
   }
 
   saveSession();
+  await refreshRemoteData();
   els.loginForm.reset();
   setMessage(els.loginMessage, "");
   renderApp();
@@ -628,7 +703,8 @@ els.togglePasswordBtn.addEventListener("click", () => {
   els.togglePasswordBtn.setAttribute("title", showPassword ? "Sembunyikan sandi" : "Lihat sandi");
 });
 
-els.statusDateInput.addEventListener("change", () => {
+els.statusDateInput.addEventListener("change", async () => {
+  await refreshRemoteData();
   renderDashboard();
   renderTable();
   renderParticipantSummary();
@@ -637,7 +713,7 @@ els.statusDateInput.addEventListener("change", () => {
 els.openScannerBtn.addEventListener("click", startScanner);
 els.closeScannerBtn.addEventListener("click", stopScanner);
 
-els.recordsBody.addEventListener("click", (event) => {
+els.recordsBody.addEventListener("click", async (event) => {
   const button = event.target.closest(".row-save");
   if (!button || session?.role !== "admin") return;
 
@@ -646,38 +722,54 @@ els.recordsBody.addEventListener("click", (event) => {
   const status = adminRowValue(npm, "status");
   const checkIn = adminRowValue(npm, "checkIn");
   const checkOut = adminRowValue(npm, "checkOut");
-  const result = saveAdminEdit(npm, date, status, checkIn, checkOut);
-  setMessage(els.adminMessage, result.message, result.ok ? "success" : "error");
+  try {
+    const result = await saveAdminEdit(npm, date, status, checkIn, checkOut);
+    setMessage(els.adminMessage, result.message, result.ok ? "success" : "error");
+  } catch {
+    setMessage(els.adminMessage, "Data gagal disimpan ke Supabase. Cek koneksi dan policy tabel.", "error");
+  }
   renderDashboard();
   renderTable();
   renderParticipantSummary();
 });
 
-els.checkInBtn.addEventListener("click", () => {
+els.checkInBtn.addEventListener("click", async () => {
   if (!pendingQr || session?.role !== "user") return;
-  const result = checkIn(session.npm, pendingQr.date);
-  setMessage(els.scanMessage, result.message, result.ok ? "success" : "error");
+  try {
+    const result = await checkIn(session.npm, pendingQr.date);
+    setMessage(els.scanMessage, result.message, result.ok ? "success" : "error");
+  } catch {
+    setMessage(els.scanMessage, "Absen gagal disimpan ke Supabase. Cek koneksi internet.", "error");
+  }
   renderDashboard();
   renderTodayStatus();
   renderTable();
 });
 
-els.checkOutBtn.addEventListener("click", () => {
+els.checkOutBtn.addEventListener("click", async () => {
   if (!pendingQr || session?.role !== "user") return;
-  const result = checkOut(session.npm, pendingQr.date);
-  setMessage(els.scanMessage, result.message, result.ok ? "success" : "error");
+  try {
+    const result = await checkOut(session.npm, pendingQr.date);
+    setMessage(els.scanMessage, result.message, result.ok ? "success" : "error");
+  } catch {
+    setMessage(els.scanMessage, "Absen pulang gagal disimpan ke Supabase. Cek koneksi internet.", "error");
+  }
   renderDashboard();
   renderTodayStatus();
   renderTable();
 });
 
-els.permitForm.addEventListener("submit", (event) => {
+els.permitForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!pendingQr || session?.role !== "user") return;
   const permitType = new FormData(els.permitForm).get("permitType");
-  const result = savePermit(session.npm, pendingQr.date, permitType, els.permitReasonInput.value);
-  setMessage(els.scanMessage, result.message, result.ok ? "success" : "error");
-  if (result.ok) els.permitForm.reset();
+  try {
+    const result = await savePermit(session.npm, pendingQr.date, permitType, els.permitReasonInput.value);
+    setMessage(els.scanMessage, result.message, result.ok ? "success" : "error");
+    if (result.ok) els.permitForm.reset();
+  } catch {
+    setMessage(els.scanMessage, "Keterangan gagal disimpan ke Supabase. Cek koneksi internet.", "error");
+  }
   renderDashboard();
   renderTodayStatus();
   renderTable();
@@ -704,19 +796,26 @@ els.exportExcelBtn.addEventListener("click", () => {
   URL.revokeObjectURL(link.href);
 });
 
-if (session) {
-  renderApp();
-  handlePendingQrAfterLogin();
-  renderDashboard();
-  renderTodayStatus();
-  renderTable();
-  renderParticipantSummary();
-} else {
-  renderLogin();
+async function initApp() {
+  initDatabase();
+  await refreshRemoteData();
+  if (session) {
+    renderApp();
+    handlePendingQrAfterLogin();
+    renderDashboard();
+    renderTodayStatus();
+    renderTable();
+    renderParticipantSummary();
+  } else {
+    renderLogin();
+  }
 }
 
-setInterval(() => {
+initApp();
+
+setInterval(async () => {
   if (session) {
+    await refreshRemoteData();
     renderDateLabel();
     renderDashboard();
     renderTodayStatus();
