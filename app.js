@@ -67,6 +67,7 @@ let session = loadJson(SESSION_KEY, null);
 let pendingQr = getPendingQr();
 let scannerStream = null;
 let scannerTimer = null;
+let scannerCanvas = null;
 let dbReady = false;
 let dbClient = null;
 
@@ -702,17 +703,55 @@ function stopScanner() {
   els.scannerPanel?.classList.add("hidden");
 }
 
+async function openCameraStream() {
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: false,
+    });
+  } catch (error) {
+    if (error.name === "OverconstrainedError" || error.name === "ConstraintNotSatisfiedError") {
+      return navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    }
+    throw error;
+  }
+}
+
+function scanQrWithCanvas(video) {
+  if (!window.jsQR || !video.videoWidth || !video.videoHeight) return "";
+  if (!scannerCanvas) scannerCanvas = document.createElement("canvas");
+  const context = scannerCanvas.getContext("2d", { willReadFrequently: true });
+  scannerCanvas.width = video.videoWidth;
+  scannerCanvas.height = video.videoHeight;
+  context.drawImage(video, 0, 0, scannerCanvas.width, scannerCanvas.height);
+  const image = context.getImageData(0, 0, scannerCanvas.width, scannerCanvas.height);
+  return window.jsQR(image.data, image.width, image.height, { inversionAttempts: "dontInvert" })?.data || "";
+}
+
 async function startScanner() {
   if (session?.role !== "user") return;
-  if (!("BarcodeDetector" in window) || !navigator.mediaDevices?.getUserMedia) {
-    setMessage(els.scanMessage, "Browser ini belum mendukung scan QR langsung. Gunakan kamera HP untuk scan QR seperti biasa.", "error");
+  if (!navigator.mediaDevices?.getUserMedia) {
+    setMessage(els.scanMessage, "Browser ini belum bisa membuka kamera. Pakai Safari/Chrome terbaru dan buka situs lewat HTTPS.", "error");
+    return;
+  }
+  if (!("BarcodeDetector" in window) && !window.jsQR) {
+    setMessage(els.scanMessage, "Pemindai QR belum siap. Muat ulang halaman lalu coba lagi.", "error");
     return;
   }
 
   try {
     stopScanner();
-    const detector = new BarcodeDetector({ formats: ["qr_code"] });
-    scannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    let detector = null;
+    try {
+      detector = "BarcodeDetector" in window ? new BarcodeDetector({ formats: ["qr_code"] }) : null;
+    } catch {
+      detector = null;
+    }
+    scannerStream = await openCameraStream();
     els.scannerVideo.srcObject = scannerStream;
     els.scannerPanel.classList.remove("hidden");
     await els.scannerVideo.play();
@@ -720,8 +759,14 @@ async function startScanner() {
 
     scannerTimer = window.setInterval(async () => {
       try {
-        const codes = await detector.detect(els.scannerVideo);
-        const result = activateQr(qrFromText(codes[0]?.rawValue || ""));
+        let codes = [];
+        try {
+          codes = detector ? await detector.detect(els.scannerVideo) : [];
+        } catch {
+          codes = [];
+        }
+        const rawValue = codes[0]?.rawValue || scanQrWithCanvas(els.scannerVideo);
+        const result = activateQr(qrFromText(rawValue));
         if (!result.ok) return;
         stopScanner();
         setMessage(els.scanMessage, result.message, "success");
