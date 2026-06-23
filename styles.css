@@ -741,6 +741,24 @@ td.status {
   padding: 8px 10px;
 }
 
+.time-edit {
+  min-width: 150px;
+}
+
+.time-edit .table-input {
+  min-width: 100px;
+}
+
+.time-reset {
+  width: auto;
+  margin-top: 6px;
+  padding: 7px 10px;
+  color: var(--red);
+  background: #fff;
+  border-color: rgba(184, 66, 66, 0.35);
+  font-size: 12px;
+}
+
 .status-select {
   text-transform: capitalize;
 }

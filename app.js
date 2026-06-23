@@ -200,6 +200,10 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function escapeExcel(value) {
+  return escapeHtml(value || "-");
+}
+
 function normalizeLogin(value) {
   return value.trim().replace(/\s+/g, " ").toLowerCase();
 }
@@ -227,6 +231,39 @@ function ensureModernRecord(record) {
   if (!record.checkIn && record.time && record.status === "hadir") record.checkIn = record.time;
   if (!record.checkOut) record.checkOut = "";
   return record;
+}
+
+function autoAlpaDates() {
+  return elapsedKknDates().filter((date) => date < dateKey());
+}
+
+async function ensureAutomaticAlpaRecords() {
+  const missingRecords = [];
+  autoAlpaDates().forEach((date) => {
+    USERS.forEach((user) => {
+      if (recordFor(user.npm, date)) return;
+      missingRecords.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+        npm: user.npm,
+        name: user.name,
+        date,
+        status: "alpa",
+        source: "otomatis 24 jam",
+        checkIn: "",
+        checkOut: "",
+        reason: "",
+        updatedAt: new Date().toISOString(),
+      });
+    });
+  });
+
+  if (missingRecords.length === 0) return;
+  records.push(...missingRecords);
+  saveRecords();
+  if (!dbReady) return;
+  const { error } = await dbClient.from("attendance").upsert(missingRecords.map(toDbRecord), { onConflict: "npm,date" });
+  if (error) throw error;
+  await loadRemoteRecords();
 }
 
 async function upsertRecord(npm, date, status, source) {
@@ -259,13 +296,29 @@ async function saveAdminEdit(npm, date, status, checkIn, checkOut) {
   if (!user || !isKknDate(date)) return { ok: false, message: "Tanggal atau akun tidak valid." };
 
   const existing = ensureModernRecord(recordFor(npm, date));
-  if (!status || status === "alpa") {
-    await deleteRemoteRecord(npm, date);
-    return { ok: true, message: "Riwayat tanggal ini dikosongkan." };
+  if (!status) {
+    const payload = {
+      npm,
+      name: user.name,
+      date,
+      status: "",
+      source: "edit admin",
+      checkIn: "",
+      checkOut: "",
+      reason: "",
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (existing) Object.assign(existing, payload);
+    else records.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, ...payload });
+
+    await syncRecord(existing || payload);
+    return { ok: true, message: "Riwayat tanggal ini dikosongkan dan jam direset." };
   }
 
   if ((checkIn || checkOut) && status !== "hadir") return { ok: false, message: "Jam masuk/pulang hanya dipakai untuk status hadir." };
   if (checkOut && !checkIn) return { ok: false, message: "Isi jam masuk sebelum jam pulang." };
+  const finalCheckIn = status === "hadir" ? checkIn || currentTime() : "";
 
   const payload = {
     npm,
@@ -273,7 +326,7 @@ async function saveAdminEdit(npm, date, status, checkIn, checkOut) {
     date,
     status,
     source: "edit admin",
-    checkIn: status === "hadir" ? checkIn : "",
+    checkIn: finalCheckIn,
     checkOut: status === "hadir" ? checkOut : "",
     reason: existing?.reason || "",
     updatedAt: new Date().toISOString(),
@@ -415,9 +468,11 @@ function buildRows(npmList) {
   });
 }
 
-function summaryFor(npmList) {
+function summaryFor(npmList, date = "") {
   const counts = { hadir: 0, alpa: 0, izin: 0, sakit: 0 };
-  const rows = session?.role === "admin" ? records.filter((record) => npmList.includes(record.npm)) : buildRows(npmList);
+  const rows = session?.role === "admin"
+    ? records.filter((record) => npmList.includes(record.npm) && (!date || record.date === date))
+    : buildRows(npmList);
   rows.forEach((row) => {
     if (counts[row.status] !== undefined) counts[row.status] += 1;
   });
@@ -445,12 +500,13 @@ function renderDateLabel() {
 
 function renderDashboard() {
   const npmList = currentNpmList();
-  const counts = summaryFor(npmList);
+  const isAdmin = session?.role === "admin";
+  const counts = summaryFor(npmList, isAdmin ? selectedAdminDate() : "");
   const totalDone = counts.hadir + counts.izin + counts.sakit;
-  const totalSlots = Math.max(1, elapsedKknDates().length * Math.max(1, npmList.length));
+  const totalSlots = Math.max(1, isAdmin ? npmList.length : elapsedKknDates().length * Math.max(1, npmList.length));
   const progress = Math.round((totalDone / totalSlots) * 100);
 
-  els.progressLabel.textContent = session?.role === "admin" ? "Progres absensi" : "Progres absensi saya";
+  els.progressLabel.textContent = isAdmin ? "Progres absensi" : "Progres absensi saya";
   els.hadirCount.textContent = counts.hadir;
   els.alpaCount.textContent = counts.alpa;
   els.izinCount.textContent = counts.izin;
@@ -533,8 +589,8 @@ function adminEditableCells(row) {
     .map((status) => `<option value="${status}" ${row.status === status ? "selected" : ""}>${status || "Kosong"}</option>`)
     .join("");
   return `
-    <td><input class="table-input" data-field="checkIn" data-npm="${escapeHtml(row.npm)}" type="time" value="${escapeHtml(row.checkIn)}" /></td>
-    <td><input class="table-input" data-field="checkOut" data-npm="${escapeHtml(row.npm)}" type="time" value="${escapeHtml(row.checkOut)}" /></td>
+    <td class="time-edit"><input class="table-input" data-field="checkIn" data-npm="${escapeHtml(row.npm)}" data-original="${escapeHtml(row.checkIn)}" type="time" value="${escapeHtml(row.checkIn)}" /><button class="time-reset" type="button" data-reset-field="checkIn" data-npm="${escapeHtml(row.npm)}" title="Reset jam masuk" aria-label="Reset jam masuk">Reset</button></td>
+    <td class="time-edit"><input class="table-input" data-field="checkOut" data-npm="${escapeHtml(row.npm)}" data-original="${escapeHtml(row.checkOut)}" type="time" value="${escapeHtml(row.checkOut)}" /><button class="time-reset" type="button" data-reset-field="checkOut" data-npm="${escapeHtml(row.npm)}" title="Reset jam pulang" aria-label="Reset jam pulang">Reset</button></td>
     <td><select class="table-input status-select" data-field="status" data-npm="${escapeHtml(row.npm)}">${statusOptions}</select></td>
     <td>${escapeHtml(row.reason || "-")}</td>
     <td><button class="row-save" type="button" data-npm="${escapeHtml(row.npm)}">Simpan</button></td>
@@ -545,12 +601,30 @@ function adminRowValue(npm, field) {
   return Array.from(els.recordsBody.querySelectorAll(`[data-field="${field}"]`)).find((input) => input.dataset.npm === npm)?.value || "";
 }
 
+function adminRowInput(npm, field) {
+  return Array.from(els.recordsBody.querySelectorAll(`[data-field="${field}"]`)).find((input) => input.dataset.npm === npm);
+}
+
+function updateAdminRowTimesForStatus(npm, status) {
+  const checkInInput = adminRowInput(npm, "checkIn");
+  const checkOutInput = adminRowInput(npm, "checkOut");
+  if (!checkInInput || !checkOutInput) return;
+  if (status === "hadir") {
+    checkInInput.value = checkInInput.dataset.original || checkInInput.value || currentTime();
+    checkOutInput.value = checkOutInput.dataset.original || checkOutInput.value || "";
+    return;
+  }
+  checkInInput.value = "";
+  checkOutInput.value = "";
+}
+
 function renderParticipantSummary() {
   if (session?.role !== "admin") return;
+  const date = selectedAdminDate();
   els.participantGrid.innerHTML = USERS.map((user) => {
-    const counts = summaryFor([user.npm]);
+    const counts = summaryFor([user.npm], date);
     const done = counts.hadir + counts.izin + counts.sakit;
-    const total = Math.max(1, elapsedKknDates().length);
+    const total = 1;
     const percent = Math.round((done / total) * 100);
     return `<article class="participant-card">
       <div>
@@ -611,9 +685,9 @@ function handlePendingQrAfterLogin() {
 }
 
 async function refreshRemoteData() {
-  if (!dbReady) return;
   try {
-    await loadRemoteRecords();
+    if (dbReady) await loadRemoteRecords();
+    await ensureAutomaticAlpaRecords();
   } catch {
     const target = session?.role === "admin" ? els.adminMessage : els.scanMessage;
     if (target) setMessage(target, "Data online belum bisa dimuat. Cek koneksi atau key Supabase.", "error");
@@ -714,6 +788,13 @@ els.openScannerBtn.addEventListener("click", startScanner);
 els.closeScannerBtn.addEventListener("click", stopScanner);
 
 els.recordsBody.addEventListener("click", async (event) => {
+  const resetButton = event.target.closest(".time-reset");
+  if (resetButton && session?.role === "admin") {
+    const input = adminRowInput(resetButton.dataset.npm, resetButton.dataset.resetField);
+    if (input) input.value = "";
+    return;
+  }
+
   const button = event.target.closest(".row-save");
   if (!button || session?.role !== "admin") return;
 
@@ -731,6 +812,12 @@ els.recordsBody.addEventListener("click", async (event) => {
   renderDashboard();
   renderTable();
   renderParticipantSummary();
+});
+
+els.recordsBody.addEventListener("change", (event) => {
+  const statusSelect = event.target.closest(".status-select");
+  if (!statusSelect || session?.role !== "admin") return;
+  updateAdminRowTimesForStatus(statusSelect.dataset.npm, statusSelect.value);
 });
 
 els.checkInBtn.addEventListener("click", async () => {
@@ -784,14 +871,85 @@ els.exportExcelBtn.addEventListener("click", () => {
       checkOut: record.checkOut || "",
       reason: record.reason || "",
     }));
-  const headers = ["Tanggal", "Nama", "NPM", "Jam Masuk", "Jam Pulang", "Status", "Alasan"];
-  const csv = [headers, ...rows.map((row) => [displayDate(row.date), row.name, row.npm, row.checkIn, row.checkOut, row.status, row.reason])]
-    .map((line) => line.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","))
-    .join("\n");
-  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+  const sortedRows = rows.sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name));
+  const exportedAt = new Date().toLocaleString("id-ID", { dateStyle: "long", timeStyle: "short" });
+  const bodyRows = sortedRows
+    .map(
+      (row, index) => `<tr>
+        <td class="number">${index + 1}</td>
+        <td class="date text">${escapeExcel(displayDate(row.date))}</td>
+        <td>${escapeExcel(row.name)}</td>
+        <td class="npm">${escapeExcel(row.npm)}</td>
+        <td class="time">${escapeExcel(row.checkIn)}</td>
+        <td class="time">${escapeExcel(row.checkOut)}</td>
+        <td class="status ${escapeExcel(row.status)}">${escapeExcel(row.status)}</td>
+        <td>${escapeExcel(row.reason)}</td>
+      </tr>`,
+    )
+    .join("");
+  const excel = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: Arial, sans-serif; color: #1f2937; }
+      h1 { margin: 0; font-size: 20px; }
+      p { margin: 4px 0 18px; color: #4b5563; }
+      table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+      th, td { border: 1px solid #9ca3af; padding: 8px 10px; vertical-align: middle; }
+      th { background: #0f766e; color: #ffffff; font-weight: 700; text-align: center; }
+      td { background: #ffffff; }
+      tr:nth-child(even) td { background: #f8fafc; }
+      .number { width: 48pt; text-align: center; }
+      .date { width: 118pt; mso-number-format: "\\@"; white-space: nowrap; }
+      .name { width: 220pt; }
+      .npm { width: 135pt; mso-number-format: "\\@"; }
+      .time { width: 86pt; text-align: center; mso-number-format: "\\@"; }
+      .status { width: 90pt; text-align: center; text-transform: capitalize; font-weight: 700; }
+      .reason { width: 260pt; }
+      .text { mso-number-format: "\\@"; }
+      .hadir { color: #047857; }
+      .izin { color: #b45309; }
+      .sakit { color: #0369a1; }
+      .alpa { color: #b91c1c; }
+    </style>
+  </head>
+  <body>
+    <h1>Rekap Absensi KKN Tematik Kel. Gamalama 2026</h1>
+    <p>Diexport pada ${escapeExcel(exportedAt)}</p>
+    <table>
+      <colgroup>
+        <col style="width: 48pt" />
+        <col style="width: 118pt" />
+        <col style="width: 220pt" />
+        <col style="width: 135pt" />
+        <col style="width: 86pt" />
+        <col style="width: 86pt" />
+        <col style="width: 90pt" />
+        <col style="width: 260pt" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th class="number">No</th>
+          <th class="date">Tanggal</th>
+          <th class="name">Nama</th>
+          <th class="npm">NPM</th>
+          <th class="time">Jam Masuk</th>
+          <th class="time">Jam Pulang</th>
+          <th class="status">Status</th>
+          <th class="reason">Alasan</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${bodyRows || '<tr><td colspan="8">Belum ada data absensi.</td></tr>'}
+      </tbody>
+    </table>
+  </body>
+</html>`;
+  const blob = new Blob([excel], { type: "application/vnd.ms-excel;charset=utf-8" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `absensi-kkn-gamalama-${dateKey()}.csv`;
+  link.download = `absensi-kkn-gamalama-${dateKey()}.xls`;
   link.click();
   URL.revokeObjectURL(link.href);
 });

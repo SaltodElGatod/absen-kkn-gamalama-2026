@@ -1,0 +1,176 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: Arial, sans-serif; color: #1f2937; }
+      h1 { margin: 0; font-size: 20px; }
+      p { margin: 4px 0 18px; color: #4b5563; }
+      table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+      th, td { border: 1px solid #9ca3af; padding: 8px 10px; vertical-align: middle; }
+      th { background: #0f766e; color: #ffffff; font-weight: 700; text-align: center; }
+      td { background: #ffffff; }
+      tr:nth-child(even) td { background: #f8fafc; }
+      .number { width: 48pt; text-align: center; }
+      .date { width: 118pt; mso-number-format: "\@"; white-space: nowrap; }
+      .name { width: 220pt; }
+      .npm { width: 135pt; mso-number-format: "\@"; }
+      .time { width: 86pt; text-align: center; mso-number-format: "\@"; }
+      .status { width: 90pt; text-align: center; text-transform: capitalize; font-weight: 700; }
+      .reason { width: 260pt; }
+      .text { mso-number-format: "\@"; }
+      .hadir { color: #047857; }
+      .izin { color: #b45309; }
+      .sakit { color: #0369a1; }
+      .alpa { color: #b91c1c; }
+    </style>
+  </head>
+  <body>
+    <h1>Rekap Absensi KKN Tematik Kel. Gamalama 2026</h1>
+    <p>Diexport pada 23 Juni 2026 pukul 20.00</p>
+    <table>
+      <colgroup>
+        <col style="width: 48pt" />
+        <col style="width: 118pt" />
+        <col style="width: 220pt" />
+        <col style="width: 135pt" />
+        <col style="width: 86pt" />
+        <col style="width: 86pt" />
+        <col style="width: 90pt" />
+        <col style="width: 260pt" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th class="number">No</th>
+          <th class="date">Tanggal</th>
+          <th class="name">Nama</th>
+          <th class="npm">NPM</th>
+          <th class="time">Jam Masuk</th>
+          <th class="time">Jam Pulang</th>
+          <th class="status">Status</th>
+          <th class="reason">Alasan</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+        <td class="number">1</td>
+        <td class="date text">22/06/2026</td>
+        <td>Affan Husen</td>
+        <td class="npm">03082311036</td>
+        <td class="time">-</td>
+        <td class="time">-</td>
+        <td class="status alpa">alpa</td>
+        <td>-</td>
+      </tr><tr>
+        <td class="number">2</td>
+        <td class="date text">22/06/2026</td>
+        <td>Asria A. Arif</td>
+        <td class="npm">03082311038</td>
+        <td class="time">-</td>
+        <td class="time">-</td>
+        <td class="status alpa">alpa</td>
+        <td>-</td>
+      </tr><tr>
+        <td class="number">3</td>
+        <td class="date text">22/06/2026</td>
+        <td>Asti</td>
+        <td class="npm">03082311035</td>
+        <td class="time">-</td>
+        <td class="time">-</td>
+        <td class="status alpa">alpa</td>
+        <td>-</td>
+      </tr><tr>
+        <td class="number">4</td>
+        <td class="date text">22/06/2026</td>
+        <td>Isnadina Putri Iksan</td>
+        <td class="npm">03082311033</td>
+        <td class="time">-</td>
+        <td class="time">-</td>
+        <td class="status alpa">alpa</td>
+        <td>-</td>
+      </tr><tr>
+        <td class="number">5</td>
+        <td class="date text">22/06/2026</td>
+        <td>M. Mufrih Syafrudin</td>
+        <td class="npm">03082311032</td>
+        <td class="time">-</td>
+        <td class="time">-</td>
+        <td class="status alpa">alpa</td>
+        <td>-</td>
+      </tr><tr>
+        <td class="number">6</td>
+        <td class="date text">22/06/2026</td>
+        <td>Muhamad Ramdani Daud</td>
+        <td class="npm">04392311002</td>
+        <td class="time">-</td>
+        <td class="time">-</td>
+        <td class="status alpa">alpa</td>
+        <td>-</td>
+      </tr><tr>
+        <td class="number">7</td>
+        <td class="date text">22/06/2026</td>
+        <td>Muhammad Salwan Wahab</td>
+        <td class="npm">07352311159</td>
+        <td class="time">-</td>
+        <td class="time">-</td>
+        <td class="status alpa">alpa</td>
+        <td>-</td>
+      </tr><tr>
+        <td class="number">8</td>
+        <td class="date text">22/06/2026</td>
+        <td>Nurul Husni Husen</td>
+        <td class="npm">07352311124</td>
+        <td class="time">-</td>
+        <td class="time">-</td>
+        <td class="status alpa">alpa</td>
+        <td>-</td>
+      </tr><tr>
+        <td class="number">9</td>
+        <td class="date text">22/06/2026</td>
+        <td>Rezha Amelia Putri Firmansyah</td>
+        <td class="npm">07352311127</td>
+        <td class="time">-</td>
+        <td class="time">-</td>
+        <td class="status alpa">alpa</td>
+        <td>-</td>
+      </tr><tr>
+        <td class="number">10</td>
+        <td class="date text">22/06/2026</td>
+        <td>Rusdi Usman</td>
+        <td class="npm">04392211024</td>
+        <td class="time">-</td>
+        <td class="time">-</td>
+        <td class="status alpa">alpa</td>
+        <td>-</td>
+      </tr><tr>
+        <td class="number">11</td>
+        <td class="date text">23/06/2026</td>
+        <td>Affan Husen</td>
+        <td class="npm">03082311036</td>
+        <td class="time">23:01:00</td>
+        <td class="time">21:03:00</td>
+        <td class="status hadir">hadir</td>
+        <td>-</td>
+      </tr><tr>
+        <td class="number">12</td>
+        <td class="date text">23/06/2026</td>
+        <td>Muhammad Salwan Wahab</td>
+        <td class="npm">07352311159</td>
+        <td class="time">09:23:00</td>
+        <td class="time">09:23:00</td>
+        <td class="status hadir">hadir</td>
+        <td>-</td>
+      </tr><tr>
+        <td class="number">13</td>
+        <td class="date text">23/06/2026</td>
+        <td>Rusdi Usman</td>
+        <td class="npm">04392211024</td>
+        <td class="time">09:27:00</td>
+        <td class="time">09:27:00</td>
+        <td class="status hadir">hadir</td>
+        <td>-</td>
+      </tr>
+      </tbody>
+    </table>
+  </body>
+</html>
