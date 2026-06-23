@@ -620,11 +620,10 @@ function updateAdminRowTimesForStatus(npm, status) {
 
 function renderParticipantSummary() {
   if (session?.role !== "admin") return;
-  const date = selectedAdminDate();
   els.participantGrid.innerHTML = USERS.map((user) => {
-    const counts = summaryFor([user.npm], date);
+    const counts = summaryFor([user.npm]);
     const done = counts.hadir + counts.izin + counts.sakit;
-    const total = 1;
+    const total = Math.max(1, elapsedKknDates().length);
     const percent = Math.round((done / total) * 100);
     return `<article class="participant-card">
       <div>
